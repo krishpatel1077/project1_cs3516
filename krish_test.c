@@ -4,7 +4,7 @@
 
 int main() {
     char ebuf[PCAP_ERRBUF_SIZE];
-    char fname = 'tcptext.txt';
+    const char *fname = "tcptext.txt";
     pcap_t *pcap;
     //open the input file
     pcap = pcap_open_offline(fname, ebuf);
@@ -16,9 +16,9 @@ int main() {
 
     int datalink = pcap_datalink(pcap);
     if (datalink == DLT_EN10MB)
-        print("Data is from 10MB ethernet!");
+        printf("Data is from 10MB ethernet!");
     else
-        print("Data is not from 10MB ethernet!");
+        printf("Data is not from 10MB ethernet!");
     pcap_close(pcap);
     return 0;
 }
