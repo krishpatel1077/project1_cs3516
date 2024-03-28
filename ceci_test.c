@@ -1,4 +1,5 @@
 #include <pcap/pcap.h>
+#include <stdio.h>
 
 int main(int argc, char* argv) {
     char ebuf[PCAP_ERRBUF_SIZE];
