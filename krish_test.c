@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <pcap/pcap.h>
 
+int totalpackets = 0;
+int totallen = 0;
 void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+    totalpackets++;
+    totallen += pkthdr->len;
     printf("Received a packet of length %d\n", pkthdr->len);
+    printf("Time Stamp of the packet is %ld.%06ld\n", pkthdr->ts.tv_sec, pkthdr->ts.tv_usec);
+    
 }
 
 int main() {
@@ -30,6 +36,9 @@ int main() {
         printf("ERROR! DATA NOT FROM ETHERNET\n");
     }
     
+    printf("Total packets processed: %d\n", totalpackets); // Print the total number of packets
+    int packet_len_avg = totallen/totalpackets;
+    printf("AVERAGE PACKET LENGTH %d\n", packet_len_avg);
     pcap_close(pcap);
     return 0;
 }
