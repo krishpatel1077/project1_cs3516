@@ -12,15 +12,15 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
 }
 
 int main() {
-    char ebuf[PCAP_ERRBUF_SIZE];
+    char errbuf[PCAP_ERRBUF_SIZE];
     const char *fname = "project2-dns.pcap";
     pcap_t *pcap;
 
     // Open the input file
-    pcap = pcap_open_offline(fname, ebuf);
+    pcap = pcap_open_offline(fname, errbuf);
     
     if (pcap == NULL) {
-        fprintf(stderr, "Error opening file: %s\n", ebuf);
+        fprintf(stderr, "Error opening file: %s\n", errbuf);
         return 1;
     }
 
