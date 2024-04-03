@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <pcap/pcap.h>
+#include "/usr/include/netinet/ip.h"
+#include "/usr/include/netinet/if_ether.h"
+//similar to above
+#include "/usr/include/net/ethernet.h"
+#include "/usr/include/netinet/tcp.h"
+#include "/usr/include/netinet/udp.h"
 
 int totalpackets = 0;
 int totallen = 0;
