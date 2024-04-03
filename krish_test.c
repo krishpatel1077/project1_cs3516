@@ -14,6 +14,9 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     totallen += pkthdr->len;
     printf("Received a packet of length %d\n", pkthdr->len);
     printf("Time Stamp of the packet is %ld.%06ld\n", pkthdr->ts.tv_sec, pkthdr->ts.tv_usec);
+
+    const u_char *ip_header;
+    const u_char *
     
 }
 
