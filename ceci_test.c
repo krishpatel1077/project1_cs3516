@@ -1,12 +1,14 @@
 //There will be code here
 #include <stdio.h>
 #include <pcap/pcap.h>
-#include <net/ethernet.h> //ether_header
+#include <netinet/ether.h> 
+#include <netinet/if_ether.h>
 #include <netinet/ip.h> //iphdr
 
 
 int totalpackets = 0;
 int totallen = 0;
+
 void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     totalpackets++;
     totallen += pkthdr->len;
@@ -14,13 +16,19 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     printf("Time Stamp of the packet is %ld.%06ld\n", pkthdr->ts.tv_sec, pkthdr->ts.tv_usec);
     
     struct iphdr *iph; 
-    struct ether_header *ethdr; 
+    struct ether_header *eth_header;
+    struct ether_addr *eth_src; 
 
     //get ethernet header 
-    ethdr = (struct ether_header *)(packet);
-    printf("destination addr of eth header %d\n", ethdr->ether_dhost);
+    eth_header = (struct ether_header *) packet; 
+    eth_src = (struct ether_addr *) eth_header->ether_dhost;
+
+    printf("src addr of eth header %s\n", ether_ntoa(eth_src));
+   //  printf("src addr of eth header %s\n", inet_ntop(4, eth_src, eth_src_addr, 4));
 
     //get ip header
+    iph = (struct iphdr *)(packet + 14);
+    printf("destination addr of ip header %d\n", (iph->daddr));
 
 }
 
