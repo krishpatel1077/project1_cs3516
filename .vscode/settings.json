@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "udp.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "if_ether.h": "c",
+        "ether.h": "c"
     }
 }

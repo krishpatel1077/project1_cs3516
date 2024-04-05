@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pcap/pcap.h>
 #include "/usr/include/netinet/ip.h"
+#include "/usr/include/netinet/ether.h"
 #include "/usr/include/netinet/if_ether.h"
 //similar to above
 #include "/usr/include/net/ethernet.h"
@@ -23,18 +24,22 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     local_tv_sec = pkthdr->ts.tv_sec;
     localtime_r(&local_tv_sec, &ltime);
     strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", &ltime); // Update format string
-    printf("%s.%06ld len:%d \n", timestr, pkthdr->ts.tv_usec, pkthdr->len); // Include microseconds
+    printf("\n %s.%06ld len:%d \n", timestr, pkthdr->ts.tv_usec, pkthdr->len); // Include microseconds
    
 
     struct iphdr *iph; 
     struct ether_header *ethdr;
     struct ether_addr *ethr_src;
     struct ether_addr *ethr_dest;
+    struct udphdr *udph;
+    u_short sport, dport;
+    u_int ip_len;
 
     //get ethernet header + destination and source address
     ethdr = (struct ether_header *)(packet);
     ethr_src = (struct ether_addr *)ethdr->ether_shost;
     ethr_dest = (struct ether_addr *)ethdr->ether_dhost;
+    printf("src addr of eth header %s\n", ether_ntoa(ethr_src));
     
     //IP addresses
     iph = (struct iphdr *)(packet + 14);
@@ -43,6 +48,17 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     inet_ntop(AF_INET, &(iph->saddr), src_addr, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->daddr), dest_addr, INET_ADDRSTRLEN);
     printf("Src IP: %s, Dst IP: %s\n", src_addr, dest_addr);
+
+    //UDP action
+    ip_len = iph->tot_len;
+    udph = (struct udphdr *)(packet + 14 + ip_len);
+    char udpsrc_addr[16];
+    char udpdest_addr[16];
+    inet_ntop(PF_INET, &(udph->uh_sport), udpsrc_addr, 16);
+    inet_ntop(PF_INET, &(udph->uh_dport), udpdest_addr, 16);
+    printf("Src UDP: %s, Dst UDP: %s\n", udpsrc_addr, udpdest_addr);
+
+
 }
 
 int main() {
@@ -70,7 +86,7 @@ int main() {
         printf("ERROR! DATA NOT FROM ETHERNET\n");
     }
     
-    printf("Total packets processed: %d\n", totalpackets); // Print the total number of packets
+    printf("\nTotal packets processed: %d\n", totalpackets); // Print the total number of packets
     int packet_len_avg = totallen/totalpackets;
     printf("AVERAGE PACKET LENGTH %d\n", packet_len_avg);
     pcap_close(pcap);
