@@ -34,6 +34,7 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     struct udphdr *udph;
     u_short sport, dport;
     u_int ip_len;
+    int udp_len;
 
     //get ethernet header + destination and source address
     ethdr = (struct ether_header *)(packet);
@@ -52,11 +53,8 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     //UDP action
     ip_len = iph->tot_len;
     udph = (struct udphdr *)(packet + 14 + ip_len);
-    char udpsrc_addr[16];
-    char udpdest_addr[16];
-    inet_ntop(PF_INET, &(udph->uh_sport), udpsrc_addr, 16);
-    inet_ntop(PF_INET, &(udph->uh_dport), udpdest_addr, 16);
-    printf("Src UDP: %s, Dst UDP: %s\n", udpsrc_addr, udpdest_addr);
+    printf("UDP Src Port: %d, Dst Port: %d\n", ntohs(udph->uh_sport), ntohs(udph->uh_dport));
+    
 
 
 }
