@@ -46,15 +46,14 @@ void addAddress(struct AddressMap *a_map, char *address) {
 
     //if new address has already been stored, add 1 to its occurence 
     for(int i = 0; i < a_map->size; i++) {
-        if(strcmp(a_map->addresses[i], newAddress)) {
+        if(strcmp(a_map->addresses[i], newAddress) == 0) {
             a_map->occurences[i]++;
             isAdded = 1;
         }
     }
 
     //if new address hasn't already been stored,
-    if(isAdded = 0) { 
-
+    if(isAdded == 0) { 
         //allocate the memory for the addresses so it can store the values
         a_map->addresses = realloc(a_map->addresses, (a_map->size + 1) * sizeof(char *));
         if (!a_map->addresses) {
@@ -79,7 +78,7 @@ void addAddress(struct AddressMap *a_map, char *address) {
 
 // Function to print the addresses stored in the AddressMap
 void printAddresses(struct AddressMap *a_map) {
-    printf("Addresses and occurences:\n");
+    printf("Addresses\n");
     for (int i = 0; i < a_map->size; i++) {
         printf("%s ", a_map->addresses[i]);
         printf("occurences: %d\n", a_map->occurences[i]);
@@ -148,7 +147,6 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     //structure, increase occurence #
 
     //printf("src addr of eth header %s\n", ether_ntoa(eth_src));
-
     addAddress(packetStats->ETH_src_map, ether_ntoa(eth_src)); 
     addAddress(packetStats->ETH_dst_map, ether_ntoa(eth_dst)); 
 
@@ -211,8 +209,16 @@ void printStats(const struct packetStats *packetStats) {
    printf("Duration of packet capture: %d.0%d seconds\n", totalSecs, totalUSecs);
 
     //print eth addresses 
+    printf("Ethernet Source ");
     printAddresses(packetStats->ETH_src_map);
+    printf("Ethernet Destination ");
     printAddresses(packetStats->ETH_dst_map);
+
+    //print ip addresses 
+    printf("IP Source ");
+    printAddresses(packetStats->IP_src_map);
+    printf("IP Destination ");
+    printAddresses(packetStats->IP_dst_map);
 
 
    ///print total number of packets 
