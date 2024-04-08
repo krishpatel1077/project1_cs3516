@@ -83,25 +83,38 @@ void printAddresses(struct AddressMap *a_map) {
         printf("%s ", a_map->addresses[i]);
         printf("occurences: %d\n", a_map->occurences[i]);
     }
+    printf("\n");
+}
+
+// Function to print the UDP ports stored in the AddressMap
+void printUDPPorts(struct AddressMap *a_map) {
+    printf("Ports:\n");
+    for (int i = 0; i < a_map->size; i++) {
+        printf("%s \n", a_map->addresses[i]);
+        //printf("occurences: %d\n", a_map->occurences[i]);
+    }
+    printf("\n");
 }
 
 //this structure will hold all of the information needed to print statistics 
 struct packetStats{
     int count; 
     int totalLen; 
+
     time_t local_tv_sec_start;
     time_t local_tv_usec_start;
     time_t local_tv_sec_end;
     time_t local_tv_usec_end;
+
     int minPacketSize; 
     int maxPacketSize; 
+
     struct AddressMap *ETH_src_map; 
     struct AddressMap *ETH_dst_map; 
     struct AddressMap *IP_src_map; 
     struct AddressMap *IP_dst_map; 
     struct AddressMap *UDP_src_map; 
     struct AddressMap *UDP_dst_map; 
-
 
 };
 
@@ -172,20 +185,28 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     addAddress(packetStats->IP_dst_map, dest_addr); 
 
 
-    //get udp header -- CHECK IF UDP IS USED FIRST
-    struct udphdr *udph;
-    u_short sport, dport;
-    u_int ip_len;
-    struct udpheader *uh;
+    //get udp header if UDP is used --> protocol field is 17
+    //printf("protocol: %d", iph->protocol);
+    if(iph->protocol == 17) {
+        struct udphdr *udph;
+        u_short sport, dport;
+        char sportString[16];
+        char dportString[16];
+        u_int ip_len;
 
-    ip_len = iph->tot_len;
-    udph = (struct udphdr *)(packet + 14 + ip_len);
+        ip_len = ntohs(iph->tot_len); // Convert to host byte order
+        udph = (struct udphdr *)(packet + 14 + (iph->ihl * 4)); // Adjust offset by IP header length
+        sport = ntohs(udph->source);
+        dport = ntohs(udph->dest);
 
-    char udpsrc_addr[16];
-    char udpdest_addr[16];
-    inet_ntop(PF_INET, &(udph->uh_sport), udpsrc_addr, 16);
-    inet_ntop(PF_INET, &(udph->uh_dport), udpdest_addr, 16);
-    printf("Src UDP: %s, Dst UDP: %s\n", udpsrc_addr, udpdest_addr);
+        sprintf(sportString, "%hu", sport);
+        sprintf(dportString, "%hu", dport);
+
+        addAddress(packetStats->UDP_src_map, sportString);
+        addAddress(packetStats->UDP_dst_map, dportString);
+
+    }
+    
 
 }
 
@@ -201,12 +222,13 @@ void printStats(const struct packetStats *packetStats) {
     local_tv_sec = packetStats->local_tv_sec_start;
     localtime_r(&local_tv_sec, &ltime);
     strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", &ltime); // Update format string
-    printf("Start date and time of packet capture: %s.%06ld\n", timestr, packetStats->local_tv_usec_start); // Include microseconds
+    printf("Start date and time of the packet capture: %s.%06ld\n", timestr, packetStats->local_tv_usec_start); // Include microseconds
    
    ///print duration
    int totalSecs = packetStats->local_tv_sec_end - packetStats->local_tv_sec_start;    
    int totalUSecs = packetStats->local_tv_usec_end - packetStats->local_tv_usec_start;    
-   printf("Duration of packet capture: %d.0%d seconds\n", totalSecs, totalUSecs);
+   printf("Duration of the packet capture: %d.0%d seconds\n", totalSecs, totalUSecs);
+    printf("\n");
 
     //print eth addresses 
     printf("Ethernet Source ");
@@ -220,6 +242,12 @@ void printStats(const struct packetStats *packetStats) {
     printf("IP Destination ");
     printAddresses(packetStats->IP_dst_map);
 
+
+    //print UDP ports 
+    printf("UDP Source ");
+    printUDPPorts(packetStats->UDP_src_map);
+    printf("UDP Destination ");
+    printUDPPorts(packetStats->UDP_dst_map);
 
    ///print total number of packets 
     printf("Total packets processed: %d\n", packetStats->count); // Print the total number of packets
