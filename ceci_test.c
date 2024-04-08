@@ -12,6 +12,7 @@
 #include <string.h>
 #include "/usr/include/netinet/tcp.h"
 #include "/usr/include/netinet/udp.h"
+#include "/usr/include/netinet/if_ether.h"
 
 /*OUR STRUCTURE IS ADDRESSMAP: A general structure with two arrays
 to hold any kind of network address and the # of occurences for each*/
@@ -224,6 +225,20 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         //arp is used 
         packetStats->isARP = 1;
         struct ether_arp *arp;
+        struct ether_addr *sha, *tha;
+        arp = (struct ether_arp *)(packet + 14);
+
+        sha = (struct ether_addr *)arp->arp_sha;
+        tha = (struct ether_addr *)arp->arp_tha; 
+
+        printf("Sender hardware address: %s\n", ether_ntoa(sha));
+        printf("Rec hardware address: %s\n", ether_ntoa(tha));
+
+        char spa_addr[INET_ADDRSTRLEN];
+        char tpa_addr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(arp->arp_spa), spa_addr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(arp->arp_tpa), tpa_addr, INET_ADDRSTRLEN);
+        printf("thing %s, %s\n", spa_addr, tpa_addr);
     }
 
     //else, ip protocol is used instead of ARP
@@ -311,7 +326,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-dns.pcap";
+    const char *fname = "project2-arp-storm.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
