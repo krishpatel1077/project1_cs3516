@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <pcap/pcap.h>
 #include <netinet/ether.h> 
+#include <net/ethernet.h> 
 #include <netinet/if_ether.h>
 #include <netinet/ip.h> //iphdr
 #include <netinet/in.h>
@@ -116,7 +117,70 @@ struct packetStats{
     struct AddressMap *UDP_src_map; 
     struct AddressMap *UDP_dst_map; 
 
+    int isARP;
+    int isUDP;
+
 };
+
+void getAddIpAddr(struct packetStats* packetStats, const u_char *packet) {
+            packetStats->isARP = 0;
+        struct iphdr *iph; 
+        struct in_addr *ip_src; 
+        struct in_addr *ip_dst;
+        struct in_addr destination; 
+
+        //get ip header
+        iph = (struct iphdr *)(packet + 14);
+
+        char src_addr[INET_ADDRSTRLEN];
+        char dest_addr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(iph->saddr), src_addr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(iph->daddr), dest_addr, INET_ADDRSTRLEN);
+
+        //add ip addresses, if it is already in the data 
+        //structure, increase occurence #
+
+        addAddress(packetStats->IP_src_map, src_addr); 
+        addAddress(packetStats->IP_dst_map, dest_addr); 
+}
+
+void getAddUDP(struct packetStats* packetStats, const u_char *packet, struct iphdr *iph) {
+    packetStats->isUDP = 1;
+    struct udphdr *udph;
+    u_short sport, dport;
+    char sportString[16];
+    char dportString[16];
+    u_int ip_len;
+
+    ip_len = ntohs(iph->tot_len); // Convert to host byte order
+    udph = (struct udphdr *)(packet + 14 + (iph->ihl * 4)); // Adjust offset by IP header length
+    sport = ntohs(udph->source);
+    dport = ntohs(udph->dest);
+
+    sprintf(sportString, "%hu", sport);
+    sprintf(dportString, "%hu", dport);
+
+    addAddress(packetStats->UDP_src_map, sportString);
+    addAddress(packetStats->UDP_dst_map, dportString);
+}
+
+void getAddEther(struct packetStats* packetStats, const u_char *packet) {
+    struct ether_header *eth_header;
+    struct ether_addr *eth_src; 
+    struct ether_addr *eth_dst;
+
+    //get ethernet header 
+    eth_header = (struct ether_header *) packet; 
+    eth_src = (struct ether_addr *) eth_header->ether_shost;
+    eth_dst = (struct ether_addr *) eth_header->ether_dhost;
+
+    //add eth addresses, if it is already in the data 
+    //structure, increase occurence #
+
+    //printf("src addr of eth header %s\n", ether_ntoa(eth_src));
+    addAddress(packetStats->ETH_src_map, ether_ntoa(eth_src)); 
+    addAddress(packetStats->ETH_dst_map, ether_ntoa(eth_dst)); 
+}
 
 void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 
@@ -146,67 +210,41 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         packetStats->minPacketSize = pkthdr->len;
     }
 
-    //now we find all of the needed headers + addresses 
+    //now we find all of the needed headers + addresses
+
+    //get ethernet addrs and add to packetstats 
+    getAddEther(packetStats, packet);
+
+    //get ether header for later use
     struct ether_header *eth_header;
-    struct ether_addr *eth_src; 
-    struct ether_addr *eth_dst;
-
-    //get ethernet header 
     eth_header = (struct ether_header *) packet; 
-    eth_src = (struct ether_addr *) eth_header->ether_shost;
-    eth_dst = (struct ether_addr *) eth_header->ether_dhost;
 
-    //add eth addresses, if it is already in the data 
-    //structure, increase occurence #
-
-    //printf("src addr of eth header %s\n", ether_ntoa(eth_src));
-    addAddress(packetStats->ETH_src_map, ether_ntoa(eth_src)); 
-    addAddress(packetStats->ETH_dst_map, ether_ntoa(eth_dst)); 
-
-    struct iphdr *iph; 
-    struct in_addr *ip_src; 
-    struct in_addr *ip_dst;
-    struct in_addr destination; 
-
-    //get ip header
-    iph = (struct iphdr *)(packet + 14);
-
-    char src_addr[INET_ADDRSTRLEN];
-    char dest_addr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(iph->saddr), src_addr, INET_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(iph->daddr), dest_addr, INET_ADDRSTRLEN);
-
-    //printf("Src IP: %s, Dst IP: %s\n", src_addr, dest_addr);
-
-    //add ip addresses, if it is already in the data 
-    //structure, increase occurence #
-
-    addAddress(packetStats->IP_src_map, src_addr); 
-    addAddress(packetStats->IP_dst_map, dest_addr); 
-
-
-    //get udp header if UDP is used --> protocol field is 17
-    //printf("protocol: %d", iph->protocol);
-    if(iph->protocol == 17) {
-        struct udphdr *udph;
-        u_short sport, dport;
-        char sportString[16];
-        char dportString[16];
-        u_int ip_len;
-
-        ip_len = ntohs(iph->tot_len); // Convert to host byte order
-        udph = (struct udphdr *)(packet + 14 + (iph->ihl * 4)); // Adjust offset by IP header length
-        sport = ntohs(udph->source);
-        dport = ntohs(udph->dest);
-
-        sprintf(sportString, "%hu", sport);
-        sprintf(dportString, "%hu", dport);
-
-        addAddress(packetStats->UDP_src_map, sportString);
-        addAddress(packetStats->UDP_dst_map, dportString);
-
+    //determine is ARP is used, ip ether type is 8
+    if(eth_header->ether_type != 8) {
+        //arp is used 
+        packetStats->isARP = 1;
+        struct ether_arp *arp;
     }
-    
+
+    //else, ip protocol is used instead of ARP
+    else {
+        //do IP stuff --> get and add IP addrs to packetStats
+        getAddIpAddr(packetStats, packet); 
+
+        //get ip header for later use
+        struct iphdr *iph; 
+        iph = (struct iphdr *)(packet + 14);
+        
+        //get udp header if UDP is used --> protocol field is 17
+        if(iph->protocol == 17) {
+            //do UDP stuff --> get and add UDP ports to packetStats
+            getAddUDP(packetStats, packet, iph); 
+        }
+        else {
+            //indicate UDP is not used 
+            packetStats->isUDP = 0;
+        }
+    }
 
 }
 
@@ -236,18 +274,25 @@ void printStats(const struct packetStats *packetStats) {
     printf("Ethernet Destination ");
     printAddresses(packetStats->ETH_dst_map);
 
-    //print ip addresses 
-    printf("IP Source ");
-    printAddresses(packetStats->IP_src_map);
-    printf("IP Destination ");
-    printAddresses(packetStats->IP_dst_map);
+    if(packetStats->isARP == 0) {
+        //print ip addresses 
+        printf("IP Source ");
+        printAddresses(packetStats->IP_src_map);
+        printf("IP Destination ");
+        printAddresses(packetStats->IP_dst_map);
+    }
 
+    else if(packetStats->isARP == 1) {
+        //print ARP machines
+    }
 
-    //print UDP ports 
-    printf("UDP Source ");
-    printUDPPorts(packetStats->UDP_src_map);
-    printf("UDP Destination ");
-    printUDPPorts(packetStats->UDP_dst_map);
+    if(packetStats->isUDP == 1) {
+        //print UDP ports 
+        printf("UDP Source ");
+        printUDPPorts(packetStats->UDP_src_map);
+        printf("UDP Destination ");
+        printUDPPorts(packetStats->UDP_dst_map);
+    }
 
    ///print total number of packets 
     printf("Total packets processed: %d\n", packetStats->count); // Print the total number of packets
