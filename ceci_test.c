@@ -1,4 +1,3 @@
-//There will be code here
 #include <stdio.h>
 #include <pcap/pcap.h>
 #include <netinet/ether.h> 
@@ -15,10 +14,10 @@
 #include "/usr/include/netinet/if_ether.h"
 
 /*OUR STRUCTURE IS ADDRESSMAP: A general structure with two arrays
-to hold any kind of network address and the # of occurences for each*/
+to hold any kind of network address and the # of occurrences for each*/
 struct AddressMap {
     char** addresses; // Pointer to an array of addresses
-    int16_t* occurences;   // Pointer to an array of occurence #s
+    int16_t* occurrences;   // Pointer to an array of occurrence #s
     int size;
 };
 
@@ -29,7 +28,7 @@ struct AddressMap *initAddressMap() {
         exit(EXIT_FAILURE);
     }
     map->addresses = NULL;
-    map->occurences = NULL;
+    map->occurrences = NULL;
     map->size = 0;
 
     return map;
@@ -46,10 +45,10 @@ void addAddress(struct AddressMap *a_map, char *address) {
         exit(EXIT_FAILURE);
     }
 
-    //if new address has already been stored, add 1 to its occurence 
+    //if new address has already been stored, add 1 to its occurrence 
     for(int i = 0; i < a_map->size; i++) {
         if(strcmp(a_map->addresses[i], newAddress) == 0) {
-            a_map->occurences[i]++;
+            a_map->occurrences[i]++;
             isAdded = 1;
         }
     }
@@ -65,14 +64,14 @@ void addAddress(struct AddressMap *a_map, char *address) {
         //add on the new address
         a_map->addresses[a_map->size] = newAddress;
 
-        //allocate the memory for the occurences so it can store the values
-        a_map->occurences = realloc(a_map->occurences, (a_map->size + 1) * sizeof(char *));
-        if (!a_map->occurences) {
+        //allocate the memory for the occurrences so it can store the values
+        a_map->occurrences = realloc(a_map->occurrences, (a_map->size + 1) * sizeof(int16_t));
+        if (!a_map->occurrences) {
             perror("Memory allocation failed");
             exit(EXIT_FAILURE);
         }
-        //store the new occurence
-        a_map->occurences[a_map->size] = 1;
+        //store the new occurrence
+        a_map->occurrences[a_map->size] = 1;
 
         a_map->size++; // Increment the size of the map
     }
@@ -83,7 +82,7 @@ void printAddresses(struct AddressMap *a_map) {
     printf("Addresses\n");
     for (int i = 0; i < a_map->size; i++) {
         printf("%s ", a_map->addresses[i]);
-        printf("occurences: %d\n", a_map->occurences[i]);
+        printf("occurrences: %d\n", a_map->occurrences[i]);
     }
     printf("\n");
 }
@@ -93,13 +92,13 @@ void printUDPPorts(struct AddressMap *a_map) {
     printf("Ports:\n");
     for (int i = 0; i < a_map->size; i++) {
         printf("%s \n", a_map->addresses[i]);
-        //printf("occurences: %d\n", a_map->occurences[i]);
+        //printf("occurrences: %d\n", a_map->occurrences[i]);
     }
     printf("\n");
 }
 
 //this structure will hold all of the information needed to print statistics 
-struct packetStats{
+struct packetStats {
     int count; 
     int totalLen; 
 
@@ -118,31 +117,32 @@ struct packetStats{
     struct AddressMap *UDP_src_map; 
     struct AddressMap *UDP_dst_map; 
 
+    struct AddressMap *ARP_sender_map; // Map to store ARP sender MAC addresses
+    struct AddressMap *ARP_recipient_map; // Map to store ARP recipient MAC addresses
+
     int isARP;
     int isUDP;
-
 };
 
 void getAddIpAddr(struct packetStats* packetStats, const u_char *packet) {
-            packetStats->isARP = 0;
-        struct iphdr *iph; 
-        struct in_addr *ip_src; 
-        struct in_addr *ip_dst;
-        struct in_addr destination; 
+    packetStats->isARP = 0;
+    struct iphdr *iph; 
+    struct in_addr *ip_src; 
+    struct in_addr *ip_dst;
 
-        //get ip header
-        iph = (struct iphdr *)(packet + 14);
+    //get ip header
+    iph = (struct iphdr *)(packet + 14);
 
-        char src_addr[INET_ADDRSTRLEN];
-        char dest_addr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(iph->saddr), src_addr, INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &(iph->daddr), dest_addr, INET_ADDRSTRLEN);
+    char src_addr[INET_ADDRSTRLEN];
+    char dest_addr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(iph->saddr), src_addr, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->daddr), dest_addr, INET_ADDRSTRLEN);
 
-        //add ip addresses, if it is already in the data 
-        //structure, increase occurence #
+    //add ip addresses, if it is already in the data 
+    //structure, increase occurrence #
 
-        addAddress(packetStats->IP_src_map, src_addr); 
-        addAddress(packetStats->IP_dst_map, dest_addr); 
+    addAddress(packetStats->IP_src_map, src_addr); 
+    addAddress(packetStats->IP_dst_map, dest_addr); 
 }
 
 void getAddUDP(struct packetStats* packetStats, const u_char *packet, struct iphdr *iph) {
@@ -176,9 +176,8 @@ void getAddEther(struct packetStats* packetStats, const u_char *packet) {
     eth_dst = (struct ether_addr *) eth_header->ether_dhost;
 
     //add eth addresses, if it is already in the data 
-    //structure, increase occurence #
+    //structure, increase occurrence #
 
-    //printf("src addr of eth header %s\n", ether_ntoa(eth_src));
     addAddress(packetStats->ETH_src_map, ether_ntoa(eth_src)); 
     addAddress(packetStats->ETH_dst_map, ether_ntoa(eth_dst)); 
 }
@@ -213,7 +212,7 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
 
     //now we find all of the needed headers + addresses
 
-    //get ethernet addrs and add to packetstats 
+    //get ethernet addrs and add to packetStats 
     getAddEther(packetStats, packet);
 
     //get ether header for later use
@@ -221,7 +220,8 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     eth_header = (struct ether_header *) packet; 
 
     //determine is ARP is used, ip ether type is 8
-    if(eth_header->ether_type != 8) {
+    //printf("%d\n",eth_header->ether_type);
+    if(eth_header->ether_type == 1544) {
         //arp is used 
         packetStats->isARP = 1;
         struct ether_arp *arp;
@@ -231,18 +231,20 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         sha = (struct ether_addr *)arp->arp_sha;
         tha = (struct ether_addr *)arp->arp_tha; 
 
-        printf("Sender hardware address: %s\n", ether_ntoa(sha));
-        printf("Rec hardware address: %s\n", ether_ntoa(tha));
+        // Add sender MAC address to ARP sender map
+        addAddress(packetStats->ARP_sender_map, ether_ntoa(sha));
+
+        // Add recipient MAC address to ARP recipient map
+        addAddress(packetStats->ARP_recipient_map, ether_ntoa(tha));
 
         char spa_addr[INET_ADDRSTRLEN];
         char tpa_addr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(arp->arp_spa), spa_addr, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &(arp->arp_tpa), tpa_addr, INET_ADDRSTRLEN);
-        printf("thing %s, %s\n", spa_addr, tpa_addr);
     }
 
-    //else, ip protocol is used instead of ARP
-    else {
+    //else, ipV4 used if val is 8
+    else if(eth_header->ether_type == 8) {
         //do IP stuff --> get and add IP addrs to packetStats
         getAddIpAddr(packetStats, packet); 
 
@@ -299,6 +301,10 @@ void printStats(const struct packetStats *packetStats) {
 
     else if(packetStats->isARP == 1) {
         //print ARP machines
+        printf("ARP Sender ");
+        printAddresses(packetStats->ARP_sender_map);
+        printf("ARP Recipient ");
+        printAddresses(packetStats->ARP_recipient_map);
     }
 
     if(packetStats->isUDP == 1) {
@@ -326,7 +332,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-arp-storm.pcap";
+    const char *fname = "project2-http.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
@@ -341,6 +347,8 @@ int main() {
     packetStats.IP_src_map = initAddressMap(); 
     packetStats.UDP_dst_map = initAddressMap(); 
     packetStats.UDP_src_map = initAddressMap(); 
+    packetStats.ARP_sender_map = initAddressMap(); 
+    packetStats.ARP_recipient_map = initAddressMap(); 
 
     // Open the input file
     pcap = pcap_open_offline(fname, errbuf);
