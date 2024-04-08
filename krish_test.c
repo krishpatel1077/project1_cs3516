@@ -240,8 +240,6 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         char tpa_addr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(arp->arp_spa), spa_addr, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &(arp->arp_tpa), tpa_addr, INET_ADDRSTRLEN);
-        printf("Sender IP address: %s\n", spa_addr);
-        printf("Recipient IP address: %s\n", tpa_addr);
     }
 
     //else, ip protocol is used instead of ARP
