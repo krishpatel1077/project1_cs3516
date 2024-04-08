@@ -12,6 +12,21 @@
 #include "/usr/include/netinet/tcp.h"
 #include "/usr/include/netinet/udp.h"
 
+
+
+// Structure to hold ARP entry
+struct ARP_Entry {
+    char ip[INET_ADDRSTRLEN]; // IP address
+    char mac[18]; // MAC address
+};
+
+// Function to print ARP entries
+void printARPEntries(struct ARP_Entry *arp_entries, int count) {
+    printf("ARP Entries:\n");
+    for (int i = 0; i < count; i++) {
+        printf("IP: %s\tMAC: %s\n", arp_entries[i].ip, arp_entries[i].mac);
+    }
+}
 /*OUR STRUCTURE IS ADDRESSMAP: A general structure with two arrays
 to hold any kind of network address and the # of occurences for each*/
 struct AddressMap {
