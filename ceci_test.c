@@ -122,10 +122,11 @@ struct packetStats {
 
     int isARP;
     int isUDP;
+    int isIP;
 };
 
 void getAddIpAddr(struct packetStats* packetStats, const u_char *packet) {
-    packetStats->isARP = 0;
+    packetStats->isIP = 1;
     struct iphdr *iph; 
     struct in_addr *ip_src; 
     struct in_addr *ip_dst;
@@ -257,10 +258,6 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
             //do UDP stuff --> get and add UDP ports to packetStats
             getAddUDP(packetStats, packet, iph); 
         }
-        else {
-            //indicate UDP is not used 
-            packetStats->isUDP = 0;
-        }
     }
 
 }
@@ -291,7 +288,7 @@ void printStats(const struct packetStats *packetStats) {
     printf("Ethernet Destination ");
     printAddresses(packetStats->ETH_dst_map);
 
-    if(packetStats->isARP == 0) {
+    if(packetStats->isIP == 1) {
         //print ip addresses 
         printf("IP Source ");
         printAddresses(packetStats->IP_src_map);
@@ -299,7 +296,7 @@ void printStats(const struct packetStats *packetStats) {
         printAddresses(packetStats->IP_dst_map);
     }
 
-    else if(packetStats->isARP == 1) {
+    if(packetStats->isARP == 1) {
         //print ARP machines
         printf("ARP Sender ");
         printAddresses(packetStats->ARP_sender_map);
@@ -332,7 +329,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-http.pcap";
+    const char *fname = "project2-other-network.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
@@ -349,6 +346,9 @@ int main() {
     packetStats.UDP_src_map = initAddressMap(); 
     packetStats.ARP_sender_map = initAddressMap(); 
     packetStats.ARP_recipient_map = initAddressMap(); 
+    packetStats.isARP = 0;
+    packetStats.isUDP = 0;
+    packetStats.isIP = 0;
 
     // Open the input file
     pcap = pcap_open_offline(fname, errbuf);
