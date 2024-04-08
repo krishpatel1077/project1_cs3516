@@ -327,7 +327,6 @@ int main() {
     packetStats.UDP_dst_map = initAddressMap(); 
     packetStats.UDP_src_map = initAddressMap(); 
 
-
     // Open the input file
     pcap = pcap_open_offline(fname, errbuf);
     
