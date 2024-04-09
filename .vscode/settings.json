@@ -4,6 +4,7 @@
         "stdint.h": "c",
         "if_ether.h": "c",
         "ether.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "string.h": "c"
     }
 }
