@@ -121,6 +121,9 @@ struct packetStats {
     struct AddressMap *ARP_sender_map; // Map to store ARP sender MAC addresses
     struct AddressMap *ARP_recipient_map; // Map to store ARP recipient MAC addresses
 
+    struct AddressMap *ARP_ip_sender_map;
+    struct AddressMap *ARP_ip_recipient_map;
+
     int isARP;
     int isUDP;
     int isIP;
@@ -215,7 +218,6 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
                          (pkthdr->ts.tv_usec - packetStats->local_tv_usec_start));
     }
 
-
     //length 
     printf("%d\n", pkthdr->len);
 
@@ -244,27 +246,37 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     eth_header = (struct ether_header *) packet; 
 
     //determine is ARP is used, ip ether type is x0806
-    //printf("%d\n",eth_header->ether_type);
     if(eth_header->ether_type == 1544) {
         //arp is used 
         packetStats->isARP = 1;
         struct ether_arp *arp;
         struct ether_addr *sha, *tha;
+        struct in_addr *spa, *tpa;
+
         arp = (struct ether_arp *)(packet + 14);
 
         sha = (struct ether_addr *)arp->arp_sha;
         tha = (struct ether_addr *)arp->arp_tha; 
+
+        spa = (struct in_addr *)arp->arp_spa;
+        tpa = (struct in_addr *)arp->arp_tpa; 
+
+        char spa_addr[INET_ADDRSTRLEN] = "No ip address";
+        char tpa_addr[INET_ADDRSTRLEN] = "No ip address";
+
+        inet_ntop(AF_INET, spa, spa_addr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, tpa, tpa_addr, INET_ADDRSTRLEN);
+
+        printf("spa addr %s \n", spa_addr);
+        printf("tpa addr %s \n", tpa_addr);
 
         // Add sender MAC address to ARP sender map
         addAddress(packetStats->ARP_sender_map, ether_ntoa(sha));
 
         // Add recipient MAC address to ARP recipient map
         addAddress(packetStats->ARP_recipient_map, ether_ntoa(tha));
-
-        char spa_addr[INET_ADDRSTRLEN];
-        char tpa_addr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(arp->arp_spa), spa_addr, INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &(arp->arp_tpa), tpa_addr, INET_ADDRSTRLEN);
+        
+        
     }
 
     //else, ipV4 used if val is 8
@@ -304,8 +316,10 @@ void printStats(const struct packetStats *packetStats) {
         //print ARP machines
         printf("ARP Sender ");
         printAddresses(packetStats->ARP_sender_map);
+        printAddresses(packetStats->ARP_ip_sender_map);
         printf("ARP Recipient ");
         printAddresses(packetStats->ARP_recipient_map);
+        printAddresses(packetStats->ARP_ip_recipient_map);
     }
 
     if(packetStats->isUDP == 1) {
@@ -333,7 +347,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-http.pcap";
+    const char *fname = "project2-arp-storm.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
