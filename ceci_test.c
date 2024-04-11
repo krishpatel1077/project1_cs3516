@@ -205,8 +205,16 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     printf("%s.%06ld ", timestr, pkthdr->ts.tv_usec); // Include microseconds
 
     //duration
-    printf("%ld.%06ld ", (local_tv_sec - packetStats->local_tv_sec_start),
+    if(pkthdr->ts.tv_usec - packetStats->local_tv_usec_start < 0) {
+        //handle negative wrap around 
+        printf("%ld.%06ld ", (local_tv_sec - packetStats->local_tv_sec_start) - 1,
+                         (pkthdr->ts.tv_usec - packetStats->local_tv_usec_start + 1000000));
+    }
+    else {
+        printf("%ld.%06ld ", (local_tv_sec - packetStats->local_tv_sec_start),
                          (pkthdr->ts.tv_usec - packetStats->local_tv_usec_start));
+    }
+
 
     //length 
     printf("%d\n", pkthdr->len);
