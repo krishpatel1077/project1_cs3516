@@ -204,8 +204,26 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", &ltime); // Update format string
     printf("%s.%06ld ", timestr, pkthdr->ts.tv_usec); // Include microseconds
 
-    //duration
-    printf("%ld ", (local_tv_sec - packetStats->local_tv_sec_start));
+    long int duration_seconds = local_tv_sec - packetStats->local_tv_sec_start;
+    long int duration_microseconds = pkthdr->ts.tv_usec - packetStats->local_tv_usec_start;
+
+    // Check if duration_microseconds is negative
+    if (duration_microseconds < 0) {
+        duration_seconds--; // Decrement seconds
+        duration_microseconds += 1000000; // Add a second's worth of microseconds
+    }
+
+    // Convert microseconds to decimal format in seconds
+    float duration_decimal = (float)duration_microseconds / 1000000;
+
+    // Subtract microseconds from seconds
+    float total_duration = (float)duration_seconds - duration_decimal;
+
+    printf("%.6f\n", total_duration);
+
+
+
+
 
     //length 
     printf("%d\n", pkthdr->len);
