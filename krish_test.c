@@ -91,8 +91,8 @@ void printAddresses(struct AddressMap *a_map) {
 void printUDPPorts(struct AddressMap *a_map) {
     printf("Ports:\n");
     for (int i = 0; i < a_map->size; i++) {
-        printf("%s \n", a_map->addresses[i]);
-        //printf("occurrences: %d\n", a_map->occurrences[i]);
+        printf("%s ", a_map->addresses[i]);
+        printf("occurrences: %d\n", a_map->occurrences[i]);
     }
     printf("\n");
 }
@@ -104,6 +104,7 @@ struct packetStats {
 
     time_t local_tv_sec_start;
     time_t local_tv_usec_start;
+
     time_t local_tv_sec_end;
     time_t local_tv_usec_end;
 
@@ -122,10 +123,11 @@ struct packetStats {
 
     int isARP;
     int isUDP;
+    int isIP;
 };
 
 void getAddIpAddr(struct packetStats* packetStats, const u_char *packet) {
-    packetStats->isARP = 0;
+    packetStats->isIP = 1;
     struct iphdr *iph; 
     struct in_addr *ip_src; 
     struct in_addr *ip_dst;
@@ -183,23 +185,36 @@ void getAddEther(struct packetStats* packetStats, const u_char *packet) {
 }
 
 void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-
+    
     //increase packet count by one and increase total length
     struct packetStats* packetStats = (struct packetStats*)user_data; 
     packetStats->count++; 
     packetStats->totalLen = packetStats->totalLen + pkthdr->len;
-   // printf("Received a packet of length %d\n", pkthdr->len);
+
+
+    ///print time of starting packet capture 
+    // Set up time relevant variables
+    struct tm ltime;
+    char timestr[22];
+    time_t local_tv_sec;
+    
+    // Time conversion
+    local_tv_sec = pkthdr->ts.tv_sec;
+    localtime_r(&local_tv_sec, &ltime);
+    strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", &ltime); // Update format string
+    printf("%s.%06ld ", timestr, pkthdr->ts.tv_usec); // Include microseconds
+
+    //duration
+    printf("%ld ", (local_tv_sec - packetStats->local_tv_sec_start));
+
+    //length 
+    printf("%d\n", pkthdr->len);
 
     //if first packet, find start date and time of packet capture 
     if(packetStats->count == 1) {
         packetStats->local_tv_sec_start = pkthdr->ts.tv_sec;
         packetStats->local_tv_usec_start = pkthdr->ts.tv_usec;
     }
-
-    //update "last packet" time stats -- will be overwritten until 
-    //actual last packet comes
-    packetStats->local_tv_sec_end = pkthdr->ts.tv_sec;
-    packetStats->local_tv_usec_end = pkthdr->ts.tv_usec;
 
     //check if we need to update min or max packet size 
     if (pkthdr->len > packetStats->maxPacketSize) {
@@ -219,8 +234,9 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     struct ether_header *eth_header;
     eth_header = (struct ether_header *) packet; 
 
-    //determine is ARP is used, ip ether type is 8
-    if(eth_header->ether_type != 8) {
+    //determine is ARP is used, ip ether type is x0806
+    //printf("%d\n",eth_header->ether_type);
+    if(eth_header->ether_type == 1544) {
         //arp is used 
         packetStats->isARP = 1;
         struct ether_arp *arp;
@@ -242,8 +258,8 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         inet_ntop(AF_INET, &(arp->arp_tpa), tpa_addr, INET_ADDRSTRLEN);
     }
 
-    //else, ip protocol is used instead of ARP
-    else {
+    //else, ipV4 used if val is 8
+    else if(eth_header->ether_type == 8) {
         //do IP stuff --> get and add IP addrs to packetStats
         getAddIpAddr(packetStats, packet); 
 
@@ -256,41 +272,18 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
             //do UDP stuff --> get and add UDP ports to packetStats
             getAddUDP(packetStats, packet, iph); 
         }
-        else {
-            //indicate UDP is not used 
-            packetStats->isUDP = 0;
-        }
     }
 
 }
 
 void printStats(const struct packetStats *packetStats) {
-    ///print time of starting packet capture 
-
-    // Set up time relevant variables
-    struct tm ltime;
-    char timestr[22];
-    time_t local_tv_sec;
-    
-    // Time conversion
-    local_tv_sec = packetStats->local_tv_sec_start;
-    localtime_r(&local_tv_sec, &ltime);
-    strftime(timestr, sizeof timestr, "%Y-%m-%d %H:%M:%S", &ltime); // Update format string
-    printf("Start date and time of the packet capture: %s.%06ld\n", timestr, packetStats->local_tv_usec_start); // Include microseconds
-   
-   ///print duration
-   int totalSecs = packetStats->local_tv_sec_end - packetStats->local_tv_sec_start;    
-   int totalUSecs = packetStats->local_tv_usec_end - packetStats->local_tv_usec_start;    
-   printf("Duration of the packet capture: %d.0%d seconds\n", totalSecs, totalUSecs);
-    printf("\n");
-
     //print eth addresses 
     printf("Ethernet Source ");
     printAddresses(packetStats->ETH_src_map);
     printf("Ethernet Destination ");
     printAddresses(packetStats->ETH_dst_map);
 
-    if(packetStats->isARP == 0) {
+    if(packetStats->isIP == 1) {
         //print ip addresses 
         printf("IP Source ");
         printAddresses(packetStats->IP_src_map);
@@ -298,7 +291,7 @@ void printStats(const struct packetStats *packetStats) {
         printAddresses(packetStats->IP_dst_map);
     }
 
-    else if(packetStats->isARP == 1) {
+    if(packetStats->isARP == 1) {
         //print ARP machines
         printf("ARP Sender ");
         printAddresses(packetStats->ARP_sender_map);
@@ -331,7 +324,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-other-network.pcap";
+    const char *fname = "project2-http.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
@@ -348,6 +341,9 @@ int main() {
     packetStats.UDP_src_map = initAddressMap(); 
     packetStats.ARP_sender_map = initAddressMap(); 
     packetStats.ARP_recipient_map = initAddressMap(); 
+    packetStats.isARP = 0;
+    packetStats.isUDP = 0;
+    packetStats.isIP = 0;
 
     // Open the input file
     pcap = pcap_open_offline(fname, errbuf);
