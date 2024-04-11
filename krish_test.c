@@ -331,7 +331,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-arp-storm.pcap";
+    const char *fname = "project2-other-network.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
