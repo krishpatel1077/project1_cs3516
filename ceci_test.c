@@ -118,11 +118,8 @@ struct packetStats {
     struct AddressMap *UDP_src_map; 
     struct AddressMap *UDP_dst_map; 
 
-    struct AddressMap *ARP_sender_map; // Map to store ARP sender MAC addresses
-    struct AddressMap *ARP_recipient_map; // Map to store ARP recipient MAC addresses
-
-    struct AddressMap *ARP_ip_sender_map;
-    struct AddressMap *ARP_ip_recipient_map;
+    struct AddressMap *ARP_sender_map; // Map to store ARP sender MAC + ip addresses 
+    struct AddressMap *ARP_recipient_map; // Map to store ARP recipient MAC + ip addresses
 
     int isARP;
     int isUDP;
@@ -267,14 +264,17 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
         inet_ntop(AF_INET, spa, spa_addr, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, tpa, tpa_addr, INET_ADDRSTRLEN);
 
-        printf("spa addr %s \n", spa_addr);
-        printf("tpa addr %s \n", tpa_addr);
+        char senderBuf[256];
+        char recBuf[256];
+        snprintf(senderBuf, sizeof(senderBuf), "%s, %s", ether_ntoa(sha), spa_addr);
+        snprintf(recBuf, sizeof(recBuf), "%s, %s", ether_ntoa(tha), tpa_addr);
 
-        // Add sender MAC address to ARP sender map
-        addAddress(packetStats->ARP_sender_map, ether_ntoa(sha));
 
-        // Add recipient MAC address to ARP recipient map
-        addAddress(packetStats->ARP_recipient_map, ether_ntoa(tha));
+        // Add sender MAC + ip addresses to ARP sender map
+        addAddress(packetStats->ARP_sender_map, senderBuf);
+
+        // Add recipient MAC + ip addresses to ARP recipient map
+        addAddress(packetStats->ARP_recipient_map, recBuf);
         
         
     }
@@ -316,10 +316,9 @@ void printStats(const struct packetStats *packetStats) {
         //print ARP machines
         printf("ARP Sender ");
         printAddresses(packetStats->ARP_sender_map);
-        printAddresses(packetStats->ARP_ip_sender_map);
+
         printf("ARP Recipient ");
         printAddresses(packetStats->ARP_recipient_map);
-        printAddresses(packetStats->ARP_ip_recipient_map);
     }
 
     if(packetStats->isUDP == 1) {
