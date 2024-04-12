@@ -205,7 +205,11 @@ void my_packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, cons
     printf("%s.%06ld ", timestr, pkthdr->ts.tv_usec); // Include microseconds
 
     //duration
-    if(pkthdr->ts.tv_usec - packetStats->local_tv_usec_start < 0) {
+    if(packetStats->count == 1) {
+        //if its the first packet, duration is 0
+        printf("0.000000 ");
+    }
+    else if(pkthdr->ts.tv_usec - packetStats->local_tv_usec_start < 0) {
         //handle negative wrap around 
         printf("%ld.%06ld ", (local_tv_sec - packetStats->local_tv_sec_start) - 1,
                          (pkthdr->ts.tv_usec - packetStats->local_tv_usec_start + 1000000));
@@ -346,7 +350,7 @@ void printStats(const struct packetStats *packetStats) {
 
 int main() {
     char errbuf[PCAP_ERRBUF_SIZE];
-    const char *fname = "project2-arp-storm.pcap";
+    const char *fname = "project2-http.pcap";
     pcap_t *pcap;
 
     //set up packetStats struct
