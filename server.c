@@ -54,6 +54,44 @@ void sigchld_handler(int s) {
     while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+// Function to receive data from client and write it to a file
+void receive_and_write(int sockfd) {
+    // Receive the length of the data
+    u_int32_t length;
+    if (recv(sockfd, &length, sizeof(u_int32_t), 0) == -1) {
+        perror("recv length");
+        exit(EXIT_FAILURE);
+    }
+
+    // Allocate memory for receiving buffer
+    char buffer[MAXDATASIZE];
+
+    // Open a file to write the received data
+    FILE *file = fopen("received_data.txt", "wb");
+    if (file == NULL) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
+    u_int32_t bytesReceivedSoFar = 0;
+    while (bytesReceivedSoFar < length) {
+        // Receive data from the client
+        int bytesActuallyReceived = recv(sockfd, buffer, MAXDATASIZE, 0);
+        if (bytesActuallyReceived == -1) {
+            perror("recv data");
+            exit(EXIT_FAILURE);
+        }
+
+        // Write received data to the file
+        fwrite(buffer, 1, bytesActuallyReceived, file);
+
+        bytesReceivedSoFar += bytesActuallyReceived;
+    }
+
+    // Close the file
+    fclose(file);
+}
+
 int main(void) {
     int sockfd, new_fd, numbytes; // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
@@ -152,6 +190,9 @@ int main(void) {
 
             buf[numbytes] = '\0';
             printf("server: received '%s'\n", buf);
+
+            // Write received data to a file
+            receive_and_write(new_fd);
 
             close(new_fd);
 
