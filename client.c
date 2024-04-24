@@ -37,6 +37,8 @@
     return buf.st_size; 
  }
 
+ void 
+
  int main(int argc, char *argv[]) {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
@@ -45,6 +47,8 @@
     char s[INET6_ADDRSTRLEN];
     FILE *qrFile;
     int qrFD;
+    int sendingOffset; 
+    int sentBytes; 
     off_t fileSize; 
 
     if (argc != 3) {
@@ -55,6 +59,8 @@
     //find file size given the file descriptor
     fileSize = get_file_size(argv[2]);
     printf("Your inputted file size is %ld\n", fileSize);
+
+    //send file data 
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
