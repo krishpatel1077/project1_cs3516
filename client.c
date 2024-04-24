@@ -4,12 +4,13 @@
  #include <errno.h>
  #include <string.h>
  #include <netdb.h>
-  #include <fcntl.h>
+ #include <fcntl.h>
  #include <sys/types.h>
  #include <netinet/in.h>
  #include <sys/socket.h>
  #include <sys/stat.h>
  #include <sys/types.h>
+ #include <sys/sendfile.h>
 
  #include <arpa/inet.h>
 
@@ -37,8 +38,6 @@
     return buf.st_size; 
  }
 
- void 
-
  int main(int argc, char *argv[]) {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
@@ -47,8 +46,10 @@
     char s[INET6_ADDRSTRLEN];
     FILE *qrFile;
     int qrFD;
-    int sendingOffset; 
+    off_t sendingOffset; 
     int sentBytes; 
+    off_t remainingData;
+    int fd; 
     off_t fileSize; 
 
     if (argc != 3) {
@@ -60,7 +61,19 @@
     fileSize = get_file_size(argv[2]);
     printf("Your inputted file size is %ld\n", fileSize);
 
-    //send file data 
+    //send file data with sendfile()
+    fd = open(argv[2], O_RDONLY);
+    sendingOffset = 0;
+    remainingData = fileSize; 
+
+    while((sentBytes = sendfile(sockfd, fd, &sendingOffset, 10000) > 0) && 
+        (remainingData > 0)) {
+        
+        //bytes were sent, update variables (offset changes automatically)
+        remainingData = remainingData - sentBytes; 
+        printf("You sent %d bytes, %ld remain", sentBytes, remainingData);
+    }
+    
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
