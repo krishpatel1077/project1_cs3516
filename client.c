@@ -43,6 +43,7 @@
     int rv;
     char s[INET6_ADDRSTRLEN];
     FILE *qrFile;
+    int qrFD;
     off_t fileSize; 
 
     if (argc != 3) {
@@ -50,7 +51,7 @@
         exit(1);
     }
 
-    qrFile = fopen(argv[2], "r"); 
+    qrFD = open(argv[2], O_RDONLY); 
     fileSize = get_file_size(qrFile);
     printf("Your inputted file size is %d\n", fileSize);
 
