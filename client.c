@@ -26,10 +26,10 @@
  return &(((struct sockaddr_in6*)sa)->sin6_addr);
  }
 
- off_t get_file_size(int fd) {
+ off_t get_file_size(char* file) {
     struct stat buf; 
 
-    if(fstat(fd, &buf) == -1) {
+    if(stat(file, &buf) == -1) {
         perror("Get file size:");
         exit(EXIT_FAILURE);
     }
@@ -52,12 +52,8 @@
         exit(1);
     }
 
-    if((qrFD = open(argv[2], O_RDONLY) == -1)) {
-        fprintf(stderr,"opening file \n");
-        exit(1);
-    }
-     
-    fileSize = get_file_size(qrFD);
+    //find file size given the file descriptor
+    fileSize = get_file_size(argv[2]);
     printf("Your inputted file size is %ld\n", fileSize);
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
