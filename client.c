@@ -4,6 +4,7 @@
  #include <errno.h>
  #include <string.h>
  #include <netdb.h>
+  #include <fcntl.h>
  #include <sys/types.h>
  #include <netinet/in.h>
  #include <sys/socket.h>
@@ -25,10 +26,10 @@
  return &(((struct sockaddr_in6*)sa)->sin6_addr);
  }
 
- off_t get_file_size(FILE *fileName) {
+ off_t get_file_size(int fd) {
     struct stat buf; 
 
-    if(fstat(fileName, &buf) == -1) {
+    if(fstat(fd, &buf) == -1) {
         perror("Get file size:");
         exit(EXIT_FAILURE);
     }
@@ -51,9 +52,13 @@
         exit(1);
     }
 
-    qrFD = open(argv[2], O_RDONLY); 
-    fileSize = get_file_size(qrFile);
-    printf("Your inputted file size is %d\n", fileSize);
+    if((qrFD = open(argv[2], O_RDONLY) == -1)) {
+        fprintf(stderr,"opening file \n");
+        exit(1);
+    }
+     
+    fileSize = get_file_size(qrFD);
+    printf("Your inputted file size is %ld\n", fileSize);
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
