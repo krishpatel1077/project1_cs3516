@@ -5,6 +5,8 @@
         "if_ether.h": "c",
         "ether.h": "c",
         "time.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "types.h": "c",
+        "errno.h": "c"
     }
 }

@@ -4,13 +4,16 @@
  #include <errno.h>
  #include <string.h>
  #include <netdb.h>
+  #include <fcntl.h>
  #include <sys/types.h>
  #include <netinet/in.h>
  #include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
 
  #include <arpa/inet.h>
 
- #define PORT "3490" // the port client will be connecting to
+ #define PORT "7099" // the port client will be connecting to
 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
 
@@ -23,17 +26,39 @@
  return &(((struct sockaddr_in6*)sa)->sin6_addr);
  }
 
+ off_t get_file_size(int fd) {
+    struct stat buf; 
+
+    if(fstat(fd, &buf) == -1) {
+        perror("Get file size:");
+        exit(EXIT_FAILURE);
+    }
+
+    return buf.st_size; 
+ }
+
  int main(int argc, char *argv[]) {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
+    FILE *qrFile;
+    int qrFD;
+    off_t fileSize; 
 
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
+    if (argc != 3) {
+        fprintf(stderr,"usage: client hostname, file\n");
         exit(1);
     }
+
+    if((qrFD = open(argv[2], O_RDONLY) == -1)) {
+        fprintf(stderr,"opening file \n");
+        exit(1);
+    }
+     
+    fileSize = get_file_size(qrFD);
+    printf("Your inputted file size is %ld\n", fileSize);
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -77,6 +102,10 @@
     buf[numbytes] = '\0';
 
     printf("client: received '%s'\n",buf);
+
+    if (send(sockfd, "Hello, server!", 14, 0) == -1) {
+        perror("send");
+    }
 
     close(sockfd);
 
