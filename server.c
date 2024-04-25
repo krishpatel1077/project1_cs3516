@@ -57,8 +57,8 @@ void sigchld_handler(int s) {
 // Function to receive data from client and write it to a file
 FILE* receive_and_write(int sockfd) {
     // Receive the length of the data
-    u_int32_t length;
-    if (recv(sockfd, &length, sizeof(u_int32_t), 0) == -1) {
+    off_t length;
+    if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
         perror("recv length");
         exit(EXIT_FAILURE);
     }
@@ -87,6 +87,7 @@ FILE* receive_and_write(int sockfd) {
 
         bytesReceivedSoFar += bytesActuallyReceived;
     }
+    printf("server: received %d bytes of sent file\n", bytesReceivedSoFar);
 
     // Close the file
     fclose(file);
@@ -185,14 +186,14 @@ int main(void) {
                 perror("send");
             }
 
-            // Receive message from client
-            if ((numbytes = recv(new_fd, buf, 14 - 1, 0)) == -1) {
+            if ((numbytes = recv(new_fd, buf, 14, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
-
+ 
             buf[numbytes] = '\0';
-            printf("server: received '%s'\n", buf);
+
+            printf("server: received '%s'\n",buf);
 
             // Write received data to a file
             qrFile = receive_and_write(new_fd);

@@ -108,9 +108,10 @@
         perror("send");
     }
 
-    //send file data with sendfile()
+    //send file data
     qrFile = fopen(argv[2], "r");
     char sendingBuf [fileSize];
+    char sizeBuf [sizeof(off_t)];
     int sendingSize; 
 
     bzero(sendingBuf, fileSize);
@@ -119,12 +120,21 @@
         perror("opening file");
     }
 
+    //send file size first
+    sizeBuf[0] = fileSize;
+    if(send(sockfd, &fileSize, sizeof(off_t), 0) == -1) {
+        perror("sending file size value");
+    }
+       
+    printf("client: sending the file size %ld\n", fileSize);
+
+    //loop to send actual data 
     while((sendingSize = fread(sendingBuf, 1, fileSize, qrFile)) > 0) {
         if(send(sockfd, sendingBuf, sendingSize, 0) == -1) {
             perror("sending file");
         }
        
-        printf("sent %d bytes to server\n", sendingSize);
+        printf("client: sent %d bytes of inputted file to server\n", sendingSize);
         bzero(sendingBuf, fileSize);
     }
 
