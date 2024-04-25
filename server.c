@@ -55,7 +55,7 @@ void sigchld_handler(int s) {
 }
 
 // Function to receive data from client and write it to a file
-void receive_and_write(int sockfd) {
+FILE* receive_and_write(int sockfd) {
     // Receive the length of the data
     u_int32_t length;
     if (recv(sockfd, &length, sizeof(u_int32_t), 0) == -1) {
@@ -90,6 +90,8 @@ void receive_and_write(int sockfd) {
 
     // Close the file
     fclose(file);
+
+    return file; 
 }
 
 int main(void) {
@@ -102,6 +104,7 @@ int main(void) {
     char s[INET6_ADDRSTRLEN];
     char buf[MAXDATASIZE];
     int rv;
+    FILE* qrFile; 
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -183,7 +186,7 @@ int main(void) {
             }
 
             // Receive message from client
-            if ((numbytes = recv(new_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
+            if ((numbytes = recv(new_fd, buf, 14 - 1, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
@@ -192,7 +195,7 @@ int main(void) {
             printf("server: received '%s'\n", buf);
 
             // Write received data to a file
-            receive_and_write(new_fd);
+            qrFile = receive_and_write(new_fd);
 
             close(new_fd);
 
