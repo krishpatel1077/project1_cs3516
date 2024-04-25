@@ -18,6 +18,9 @@
 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
 
+ ///starter code used from beej's guide to network programming
+
+
  // get sockaddr, IPv4 or IPv6:
  void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
@@ -137,6 +140,11 @@
         printf("client: sent %d bytes of inputted file to server\n", sendingSize);
         bzero(sendingBuf, fileSize);
     }
+
+    //while loop to receive things 
+    //while(1) { //end when code 2 is received (timeout)
+
+    //}
 
     close(sockfd);
 

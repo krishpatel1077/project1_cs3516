@@ -16,6 +16,8 @@
 #define BACKLOG 10 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
+///starter code used from beej's guide to network programming
+
 // Function to log administrative activities
 void log_activity(const char *action, const char *client_ip) {
     time_t current_time;
@@ -67,7 +69,7 @@ FILE* receive_and_write(int sockfd) {
     char buffer[MAXDATASIZE];
 
     // Open a file to write the received data
-    FILE *file = fopen("received_data.txt", "wb");
+    FILE *file = fopen("received_data.png", "wb");
     if (file == NULL) {
         perror("fopen");
         exit(EXIT_FAILURE);
@@ -160,6 +162,7 @@ int main(void) {
     }
 
     printf("server: waiting for connections...\n");
+    system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
 
     while (1) { // main accept() loop
         sin_size = sizeof their_addr;
@@ -198,6 +201,8 @@ int main(void) {
             // Write received data to a file
             qrFile = receive_and_write(new_fd);
 
+            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner qr2.png > QRresult.txt");
+            
             close(new_fd);
 
             // Log disconnection
