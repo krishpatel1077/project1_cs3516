@@ -162,7 +162,6 @@ int main(void) {
     }
 
     printf("server: waiting for connections...\n");
-    system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
 
     while (1) { // main accept() loop
         sin_size = sizeof their_addr;
@@ -201,7 +200,7 @@ int main(void) {
             // Write received data to a file
             qrFile = receive_and_write(new_fd);
 
-            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner qr2.png > QRresult.txt");
+            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
             
             close(new_fd);
 
