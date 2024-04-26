@@ -114,7 +114,6 @@
     //send file data
     qrFile = fopen(argv[2], "r");
     char sendingBuf [fileSize];
-    char sizeBuf [sizeof(off_t)];
     int sendingSize; 
 
     bzero(sendingBuf, fileSize);
@@ -124,7 +123,6 @@
     }
 
     //send file size first
-    sizeBuf[0] = fileSize;
     if(send(sockfd, &fileSize, sizeof(off_t), 0) == -1) {
         perror("sending file size value");
     }

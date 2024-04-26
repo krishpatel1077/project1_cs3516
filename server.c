@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <time.h> // for time functions
 
@@ -55,6 +56,18 @@ void sigchld_handler(int s) {
     // Wait for all dead processes
     while (waitpid(-1, NULL, WNOHANG) > 0);
 }
+
+// get size of inputted file
+off_t get_file_size(char* file) {
+    struct stat buf; 
+
+    if(stat(file, &buf) == -1) {
+        perror("Get file size:");
+        exit(EXIT_FAILURE);
+    }
+
+    return buf.st_size; 
+ }
 
 // Function to receive data from client and write it to a file
 FILE* receive_and_write(int sockfd) {
@@ -200,8 +213,46 @@ int main(void) {
             // Write received data to a file
             qrFile = receive_and_write(new_fd);
 
+            //convert received_data.png to QR code, print results to QRresult.txt 
             system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
             
+            //send url result, size, and return code 
+
+            off_t fileSize; 
+            fileSize = get_file_size("QRresult.txt");
+
+            FILE * dataFile;
+            dataFile = fopen("received_data.png", "r");
+
+            char sendingBuf [fileSize];
+            char sizeBuf [sizeof(off_t)];
+
+            int sendingSize; 
+            bzero(sendingBuf, fileSize);
+
+            if (dataFile == NULL) {
+                perror("opening file");
+                exit(1);
+            }
+
+            //send url size first
+            if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
+                perror("sending url size value");
+            }
+       
+            printf("server: sending the url size %ld\n", fileSize);
+
+            //loop to send actual data 
+            while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
+                if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
+                     perror("sending file");
+                }
+       
+                printf("server: sent %d bytes of url to client\n", sendingSize);
+                bzero(sendingBuf, fileSize);
+            }
+
+            //we are done sending, so now close socket 
             close(new_fd);
 
             // Log disconnection
