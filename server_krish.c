@@ -13,15 +13,11 @@
 #include <signal.h>
 #include <time.h> // for time functions
 
-#define PORT "2012" // Default port number
-#define BACKLOG 10  // how many pending connections queue will hold
+#define PORT "7099" // the port users will be connecting to
+#define BACKLOG 10 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
-// Global variables for options
-int rate_limit = 3;
-int rate_limit_time = 60;
-int max_users = 3;
-int timeout = 80;
+///starter code used from beej's guide to network programming
 
 // Function to log administrative activities
 void log_activity(const char *action, const char *client_ip) {
@@ -60,6 +56,18 @@ void sigchld_handler(int s) {
     // Wait for all dead processes
     while (waitpid(-1, NULL, WNOHANG) > 0);
 }
+
+// get size of inputted file
+off_t get_file_size(char* file) {
+    struct stat buf; 
+
+    if(stat(file, &buf) == -1) {
+        perror("Get file size:");
+        exit(EXIT_FAILURE);
+    }
+
+    return buf.st_size; 
+ }
 
 // Function to receive data from client and write it to a file
 FILE* receive_and_write(int sockfd) {
@@ -102,31 +110,8 @@ FILE* receive_and_write(int sockfd) {
     return file; 
 }
 
-int main(int argc, char *argv[]) {
-     // Parse command line arguments for options
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "PORT") == 0) {
-            if (i + 1 < argc) {
-                PORT = argv[i + 1];
-            }
-        } else if (strcmp(argv[i], "RATE") == 0) {
-            if (i + 2 < argc) {
-                rate_limit = atoi(argv[i + 1]);
-                rate_limit_time = atoi(argv[i + 2]);
-            }
-        } else if (strcmp(argv[i], "MAX USERS") == 0) {
-            if (i + 1 < argc) {
-                max_users = atoi(argv[i + 1]);
-            }
-        } else if (strcmp(argv[i], "TIME OUT") == 0) {
-            if (i + 1 < argc) {
-                timeout = atoi(argv[i + 1]);
-            }
-        }
-    }
-
-    // Socket programming code continues here...
-    int sockfd, new_fd; // listen on sock_fd, new connection on new_fd
+int main(void) {
+    int sockfd, new_fd, numbytes; // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
