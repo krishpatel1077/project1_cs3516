@@ -14,7 +14,7 @@
 
  #include <arpa/inet.h>
 
- #define PORT "2012" // the port client will be connecting to
+ #define PORT "7099" // the port client will be connecting to
 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
 
@@ -43,35 +43,61 @@
 
  // Function to receive data from client and print it
  void receive_and_print(int sockfd) {
-
-    // Receive the length of the data
+     // Receive the length of the data
     off_t length;
-    if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
+    if (recv(sockfd, &length, sizeof(off_t), 0) == -1)
+    {
         perror("recv length");
         exit(EXIT_FAILURE);
     }
 
-    printf("received length is %ld", length);
-
     // Allocate memory for receiving buffer
     char buffer[MAXDATASIZE];
 
+    // Open a file to write the received data
+    FILE *file = fopen("received_data.txt", "wb");
+    if (file == NULL)
+    {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
     u_int32_t bytesReceivedSoFar = 0;
-    while (bytesReceivedSoFar < length) {
-        // Receive data from the client
-        int bytesActuallyReceived = recv(sockfd, buffer, MAXDATASIZE-1, 0);
+    while (bytesReceivedSoFar < length)
+    {
+        // Receive data from the server
+        int bytesActuallyReceived = recv(sockfd, buffer, MAXDATASIZE, 0);
+
         if (bytesActuallyReceived == -1) {
             perror("recv data");
             exit(EXIT_FAILURE);
         }
 
-        // print received data
-        printf("%s", buffer);
-        
+        // Write received data to the file
+        fwrite(buffer, 1, bytesActuallyReceived, file);
+
         bytesReceivedSoFar += bytesActuallyReceived;
-        //printf("received so far %d", bytesReceivedSoFar);
     }
-    printf("server: received %d bytes of sent file\n", bytesReceivedSoFar);
+
+    printf("client: received %d bytes of converted data from server\n", bytesReceivedSoFar);
+
+    // Close the file
+    fclose(file);
+
+    FILE *fileRead = fopen("received_data.txt", "rb");
+    char string[255];
+
+    if(fileRead == NULL) {
+        printf("null file");
+    }
+    
+    printf("QR code result:\n\n");
+
+    while (fgets(string, 255, fileRead) != NULL) {
+        printf("%s", string); 
+    }
+
+    fclose(fileRead);
 
 }
 
@@ -141,7 +167,7 @@
 
     printf("client: received '%s'\n",buf);
 
-    if (send(sockfd, "Hello, server!", 14, 0) == -1) {
+    if (send(sockfd, "\nHello, server!", 14, 0) == -1) {
         perror("send");
     }
 

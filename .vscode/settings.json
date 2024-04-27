@@ -9,6 +9,7 @@
         "types.h": "c",
         "errno.h": "c",
         "stat.h": "c",
-        "netdb.h": "c"
+        "netdb.h": "c",
+        "in.h": "c"
     }
 }

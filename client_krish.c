@@ -67,8 +67,8 @@
     {
         // Receive data from the server
         int bytesActuallyReceived = recv(sockfd, buffer, MAXDATASIZE, 0);
-        if (bytesActuallyReceived == -1)
-        {
+
+        if (bytesActuallyReceived == -1) {
             perror("recv data");
             exit(EXIT_FAILURE);
         }
@@ -78,10 +78,26 @@
 
         bytesReceivedSoFar += bytesActuallyReceived;
     }
+
     printf("client: received %d bytes of converted data from server\n", bytesReceivedSoFar);
 
     // Close the file
     fclose(file);
+
+    FILE *fileRead = fopen("received_data.txt", "rb");
+    char string[255];
+
+    if(fileRead == NULL) {
+        printf("null file");
+    }
+    
+    printf("QR code result:\n\n");
+
+    while (fgets(string, 255, fileRead) != NULL) {
+        printf("%s", string); 
+    }
+
+    fclose(fileRead);
 
 }
 

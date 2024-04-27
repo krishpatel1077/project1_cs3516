@@ -222,7 +222,7 @@ int main(void) {
             fileSize = get_file_size("QRresult.txt");
 
             FILE * dataFile;
-            dataFile = fopen("received_data.png", "r");
+            dataFile = fopen("QRresult.txt", "r");
 
             char sendingBuf [fileSize];
             char sizeBuf [sizeof(off_t)];
