@@ -118,7 +118,7 @@
 
     printf("client: received '%s'\n",buf);
 
-    if (send(sockfd, "Hello, server!", 14, 0) == -1) {
+    if (send(sockfd, "\nHello, server!", 14, 0) == -1) {
         perror("send");
     }
 
