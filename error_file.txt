@@ -1,0 +1,35 @@
+server: waiting for connections...
+server: got connection from 10.23.36.2
+server: received '
+Hello, server'
+server: received 1589 bytes of sent file
+Exception in thread "Thread-0" java.lang.UnsatisfiedLinkError: Can't load library: /usr/lib/jvm/java-11-openjdk-amd64/lib/libawt_xawt.so
+	at java.base/java.lang.ClassLoader.loadLibrary(ClassLoader.java:2638)
+	at java.base/java.lang.Runtime.load0(Runtime.java:768)
+	at java.base/java.lang.System.load(System.java:1854)
+	at java.base/java.lang.ClassLoader$NativeLibrary.load0(Native Method)
+	at java.base/java.lang.ClassLoader$NativeLibrary.load(ClassLoader.java:2450)
+	at java.base/java.lang.ClassLoader$NativeLibrary.loadLibrary(ClassLoader.java:2506)
+	at java.base/java.lang.ClassLoader.loadLibrary0(ClassLoader.java:2705)
+	at java.base/java.lang.ClassLoader.loadLibrary(ClassLoader.java:2656)
+	at java.base/java.lang.Runtime.loadLibrary0(Runtime.java:830)
+	at java.base/java.lang.System.loadLibrary(System.java:1890)
+	at java.desktop/java.awt.Toolkit$3.run(Toolkit.java:1395)
+	at java.desktop/java.awt.Toolkit$3.run(Toolkit.java:1393)
+	at java.base/java.security.AccessController.doPrivileged(Native Method)
+	at java.desktop/java.awt.Toolkit.loadLibraries(Toolkit.java:1392)
+	at java.desktop/java.awt.Toolkit.<clinit>(Toolkit.java:1425)
+	at java.desktop/sun.awt.AppContext$2.run(AppContext.java:282)
+	at java.desktop/sun.awt.AppContext$2.run(AppContext.java:271)
+	at java.base/java.security.AccessController.doPrivileged(Native Method)
+	at java.desktop/sun.awt.AppContext.initMainAppContext(AppContext.java:271)
+	at java.desktop/sun.awt.AppContext$3.run(AppContext.java:326)
+	at java.desktop/sun.awt.AppContext$3.run(AppContext.java:309)
+	at java.base/java.security.AccessController.doPrivileged(Native Method)
+	at java.desktop/sun.awt.AppContext.getAppContext(AppContext.java:308)
+	at java.desktop/javax.imageio.spi.IIORegistry.getDefaultInstance(IIORegistry.java:129)
+	at java.desktop/javax.imageio.ImageIO.<clinit>(ImageIO.java:66)
+	at com.google.zxing.client.j2se.DecodeThread.decode(DecodeThread.java:154)
+	at com.google.zxing.client.j2se.DecodeThread.run(DecodeThread.java:82)
+server: sending the url size 0
+closing new_fd^C
