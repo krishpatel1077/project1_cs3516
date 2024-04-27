@@ -41,6 +41,36 @@
     return buf.st_size; 
  }
 
+ // Function to receive data from client and print it
+ void receive_and_print(int sockfd) {
+    // Receive the length of the data
+    off_t length;
+    if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
+        perror("recv length");
+        exit(EXIT_FAILURE);
+    }
+
+    // Allocate memory for receiving buffer
+    char buffer[MAXDATASIZE];
+
+    u_int32_t bytesReceivedSoFar = 0;
+    while (bytesReceivedSoFar < length) {
+        // Receive data from the client
+        int bytesActuallyReceived = recv(sockfd, buffer, MAXDATASIZE, 0);
+        if (bytesActuallyReceived == -1) {
+            perror("recv data");
+            exit(EXIT_FAILURE);
+        }
+
+        // print received data
+        printf("%s", buffer);
+        
+        bytesReceivedSoFar += bytesActuallyReceived;
+    }
+    printf("server: received %d bytes of sent file\n", bytesReceivedSoFar);
+
+}
+
  int main(int argc, char *argv[]) {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
@@ -138,6 +168,9 @@
         printf("client: sent %d bytes of inputted file to server\n", sendingSize);
         bzero(sendingBuf, fileSize);
     }
+
+    //receive url size and data
+    receive_and_print(sockfd);
 
     //while loop to receive things 
     //while(1) { //end when code 2 is received (timeout)

@@ -244,6 +244,7 @@ int main(void) {
 
             //loop to send actual data 
             while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
+
                 if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
                      perror("sending file");
                 }
@@ -253,6 +254,7 @@ int main(void) {
             }
 
             //we are done sending, so now close socket 
+            printf("closing new_fd");
             close(new_fd);
 
             // Log disconnection
