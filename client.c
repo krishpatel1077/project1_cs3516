@@ -63,8 +63,7 @@
         }
 
         // print received data
-        printf("%s", buffer);
-        
+        printf("data : %s", buffer);
         bytesReceivedSoFar += bytesActuallyReceived;
     }
     printf("server: received %d bytes of sent file\n", bytesReceivedSoFar);
