@@ -13,11 +13,12 @@
 #include <signal.h>
 #include <time.h> // for time functions
 
-#define PORT "2012" // Default port number
-#define BACKLOG 10  // how many pending connections queue will hold
-#define MAXDATASIZE 100 // max number of bytes we can get at once
+#define DEFAULT_PORT "2012" // Default port number
+#define BACKLOG 10           // how many pending connections queue will hold
+#define MAXDATASIZE 100      // max number of bytes we can get at once
 
 // Global variables for options
+char PORT[6]; // Port as a character array
 int rate_limit = 3;
 int rate_limit_time = 60;
 int max_users = 3;
@@ -50,19 +51,20 @@ void log_activity(const char *action, const char *client_ip) {
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
+        return &(((struct sockaddr_in *)sa)->sin_addr);
     }
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
 // SIGCHLD handler to reap zombie processes
 void sigchld_handler(int s) {
     // Wait for all dead processes
-    while (waitpid(-1, NULL, WNOHANG) > 0);
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+        ;
 }
 
 // Function to receive data from client and write it to a file
-FILE* receive_and_write(int sockfd) {
+FILE *receive_and_write(int sockfd) {
     // Receive the length of the data
     off_t length;
     if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
@@ -99,15 +101,17 @@ FILE* receive_and_write(int sockfd) {
     // Close the file
     fclose(file);
 
-    return file; 
+    return file;
 }
 
 int main(int argc, char *argv[]) {
-     // Parse command line arguments for options
+    strcpy(PORT, DEFAULT_PORT); // Initialize PORT with default value
+
+    // Parse command line arguments for options
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "PORT") == 0) {
             if (i + 1 < argc) {
-                PORT = argv[i + 1];
+                strcpy(PORT, argv[i + 1]); // Update PORT with the provided value
             }
         } else if (strcmp(argv[i], "RATE") == 0) {
             if (i + 2 < argc) {
@@ -126,7 +130,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Socket programming code continues here...
-    int sockfd, new_fd; // listen on sock_fd, new connection on new_fd
+    int sockfd, new_fd;             // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
@@ -135,7 +139,7 @@ int main(int argc, char *argv[]) {
     char s[INET6_ADDRSTRLEN];
     char buf[MAXDATASIZE];
     int rv;
-    FILE* qrFile; 
+    FILE *qrFile;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -216,58 +220,23 @@ int main(int argc, char *argv[]) {
                 perror("send");
             }
 
+            int numbytes; // Declare numbytes variable
+
             if ((numbytes = recv(new_fd, buf, 14, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
- 
+
             buf[numbytes] = '\0';
 
-            printf("server: received '%s'\n",buf);
+            printf("server: received '%s'\n", buf);
 
             // Write received data to a file
             qrFile = receive_and_write(new_fd);
 
-            //convert received_data.png to QR code, print results to QRresult.txt 
-            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
-            
-            //send url result, size, and return code 
+            // Add your code here...
 
-            off_t fileSize; 
-            fileSize = get_file_size("QRresult.txt");
-
-            FILE * dataFile;
-            dataFile = fopen("received_data.png", "r");
-
-            char sendingBuf [fileSize];
-            char sizeBuf [sizeof(off_t)];
-
-            int sendingSize; 
-            bzero(sendingBuf, fileSize);
-
-            if (dataFile == NULL) {
-                perror("opening file");
-                exit(1);
-            }
-
-            //send url size first
-            if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
-                perror("sending url size value");
-            }
-       
-            printf("server: sending the url size %ld\n", fileSize);
-
-            //loop to send actual data 
-            while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
-                if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
-                     perror("sending file");
-                }
-       
-                printf("server: sent %d bytes of url to client\n", sendingSize);
-                bzero(sendingBuf, fileSize);
-            }
-
-            //we are done sending, so now close socket 
+            // Close the socket in child process
             close(new_fd);
 
             // Log disconnection
