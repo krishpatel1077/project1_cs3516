@@ -280,10 +280,8 @@ int main(int argc, char *argv[]) {
             //loop to send actual data 
             while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
 
-                if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
-                     perror("sending file");
-                }
-       
+                char buf[fileSize];
+                fgets(buf, fileSize, dataFile);
                 printf("server: sent %d bytes of url to client\n", sendingSize);
                 bzero(sendingBuf, fileSize);
             }
