@@ -24,6 +24,20 @@ int rate_limit_time = 60;
 int max_users = 3;
 int timeout = 80;
 
+
+// get size of inputted file
+off_t get_file_size(char* file) {
+    struct stat buf; 
+
+    if(stat(file, &buf) == -1) {
+        perror("Get file size:");
+        exit(EXIT_FAILURE);
+    }
+
+    return buf.st_size; 
+ }
+
+
 // Function to log administrative activities
 void log_activity(const char *action, const char *client_ip) {
     time_t current_time;
@@ -118,11 +132,11 @@ int main(int argc, char *argv[]) {
                 rate_limit = atoi(argv[i + 1]);
                 rate_limit_time = atoi(argv[i + 2]);
             }
-        } else if (strcmp(argv[i], "MAX USERS") == 0) {
+        } else if (strcmp(argv[i], "MAX_USERS") == 0) {
             if (i + 1 < argc) {
                 max_users = atoi(argv[i + 1]);
             }
-        } else if (strcmp(argv[i], "TIME OUT") == 0) {
+        } else if (strcmp(argv[i], "TIME_OUT") == 0) {
             if (i + 1 < argc) {
                 timeout = atoi(argv[i + 1]);
             }
