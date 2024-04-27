@@ -9,12 +9,15 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <time.h> // for time functions
 
 #define PORT "7099" // the port users will be connecting to
 #define BACKLOG 10 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once
+
+///starter code used from beej's guide to network programming
 
 // Function to log administrative activities
 void log_activity(const char *action, const char *client_ip) {
@@ -54,11 +57,23 @@ void sigchld_handler(int s) {
     while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+// get size of inputted file
+off_t get_file_size(char* file) {
+    struct stat buf; 
+
+    if(stat(file, &buf) == -1) {
+        perror("Get file size:");
+        exit(EXIT_FAILURE);
+    }
+
+    return buf.st_size; 
+ }
+
 // Function to receive data from client and write it to a file
-void receive_and_write(int sockfd) {
+FILE* receive_and_write(int sockfd) {
     // Receive the length of the data
-    u_int32_t length;
-    if (recv(sockfd, &length, sizeof(u_int32_t), 0) == -1) {
+    off_t length;
+    if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
         perror("recv length");
         exit(EXIT_FAILURE);
     }
@@ -67,7 +82,7 @@ void receive_and_write(int sockfd) {
     char buffer[MAXDATASIZE];
 
     // Open a file to write the received data
-    FILE *file = fopen("received_data.txt", "wb");
+    FILE *file = fopen("received_data.png", "wb");
     if (file == NULL) {
         perror("fopen");
         exit(EXIT_FAILURE);
@@ -87,9 +102,12 @@ void receive_and_write(int sockfd) {
 
         bytesReceivedSoFar += bytesActuallyReceived;
     }
+    printf("server: received %d bytes of sent file\n", bytesReceivedSoFar);
 
     // Close the file
     fclose(file);
+
+    return file; 
 }
 
 int main(void) {
@@ -102,6 +120,7 @@ int main(void) {
     char s[INET6_ADDRSTRLEN];
     char buf[MAXDATASIZE];
     int rv;
+    FILE* qrFile; 
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -182,18 +201,58 @@ int main(void) {
                 perror("send");
             }
 
-            // Receive message from client
-            if ((numbytes = recv(new_fd, buf, MAXDATASIZE - 1, 0)) == -1) {
+            if ((numbytes = recv(new_fd, buf, 14, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
-
+ 
             buf[numbytes] = '\0';
-            printf("server: received '%s'\n", buf);
+
+            printf("server: received '%s'\n",buf);
 
             // Write received data to a file
-            receive_and_write(new_fd);
+            qrFile = receive_and_write(new_fd);
 
+            //convert received_data.png to QR code, print results to QRresult.txt 
+            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
+            
+            //send url result, size, and return code 
+
+            off_t fileSize; 
+            fileSize = get_file_size("QRresult.txt");
+
+            FILE * dataFile;
+            dataFile = fopen("received_data.png", "r");
+
+            char sendingBuf [fileSize];
+            char sizeBuf [sizeof(off_t)];
+
+            int sendingSize; 
+            bzero(sendingBuf, fileSize);
+
+            if (dataFile == NULL) {
+                perror("opening file");
+                exit(1);
+            }
+
+            //send url size first
+            if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
+                perror("sending url size value");
+            }
+       
+            printf("server: sending the url size %ld\n", fileSize);
+
+            //loop to send actual data 
+            while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
+                if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
+                     perror("sending file");
+                }
+       
+                printf("server: sent %d bytes of url to client\n", sendingSize);
+                bzero(sendingBuf, fileSize);
+            }
+
+            //we are done sending, so now close socket 
             close(new_fd);
 
             // Log disconnection

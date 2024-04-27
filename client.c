@@ -18,6 +18,9 @@
 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
 
+ ///starter code used from beej's guide to network programming
+
+
  // get sockaddr, IPv4 or IPv6:
  void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
@@ -59,21 +62,7 @@
 
     //find file size given the file descriptor
     fileSize = get_file_size(argv[2]);
-    printf("Your inputted file size is %ld\n", fileSize);
-
-    //send file data with sendfile()
-    fd = open(argv[2], O_RDONLY);
-    sendingOffset = 0;
-    remainingData = fileSize; 
-
-    while((sentBytes = sendfile(sockfd, fd, &sendingOffset, 10000) > 0) && 
-        (remainingData > 0)) {
-        
-        //bytes were sent, update variables (offset changes automatically)
-        remainingData = remainingData - sentBytes; 
-        printf("You sent %d bytes, %ld remain", sentBytes, remainingData);
-    }
-    
+    printf("Your inputted file size is %ld\n", fileSize);    
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -121,6 +110,39 @@
     if (send(sockfd, "\nHello, server!", 14, 0) == -1) {
         perror("send");
     }
+
+    //send file data
+    qrFile = fopen(argv[2], "r");
+    char sendingBuf [fileSize];
+    int sendingSize; 
+
+    bzero(sendingBuf, fileSize);
+
+    if (qrFile == NULL) {
+        perror("opening file");
+    }
+
+    //send file size first
+    if(send(sockfd, &fileSize, sizeof(off_t), 0) == -1) {
+        perror("sending file size value");
+    }
+       
+    printf("client: sending the file size %ld\n", fileSize);
+
+    //loop to send actual data 
+    while((sendingSize = fread(sendingBuf, 1, fileSize, qrFile)) > 0) {
+        if(send(sockfd, sendingBuf, sendingSize, 0) == -1) {
+            perror("sending file");
+        }
+       
+        printf("client: sent %d bytes of inputted file to server\n", sendingSize);
+        bzero(sendingBuf, fileSize);
+    }
+
+    //while loop to receive things 
+    //while(1) { //end when code 2 is received (timeout)
+
+    //}
 
     close(sockfd);
 
