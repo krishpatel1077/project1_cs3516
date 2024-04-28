@@ -13,11 +13,18 @@
 #include <signal.h>
 #include <time.h> // for time functions
 
-#define PORT "7099" // the port users will be connecting to
+#define DEFAULT_PORT "7099" // the port users will be connecting to
 #define BACKLOG 10 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
 ///starter code used from beej's guide to network programming
+
+//global variables for options 
+char PORT[6];
+int rate_limit = 3;
+int rate_limit_time = 60; 
+int max_users = 3; 
+int timeout = 80;
 
 // Function to log administrative activities
 void log_activity(const char *action, const char *client_ip) {
@@ -110,7 +117,7 @@ FILE* receive_and_write(int sockfd) {
     return file; 
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
     int sockfd, new_fd, numbytes; // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
@@ -121,6 +128,30 @@ int main(void) {
     char buf[MAXDATASIZE];
     int rv;
     FILE* qrFile; 
+
+    //parse command line arguments for options 
+    strcpy(PORT, DEFAULT_PORT); //intialize port with defualt val
+    for(int i = 0; i < argc; i++) {
+        if(strcmp(argv[i], "PORT") == 0) {
+            strcpy(PORT, argv[i + 1]);
+        }
+        else if(strcmp(argv[i], "RATE") == 0) {
+            if(i + 2 < argc) {
+                rate_limit = atoi(argv[i + 1]);
+                rate_limit_time = atoi(argv[i + 2]);
+            }
+        }
+        else if(strcmp(argv[i], "MAX USERS") == 0) {
+            if(i + 1 < argc) {
+                max_users = atoi(argv[i + 1]);
+            }
+        }
+        else if(strcmp(argv[i], "TIME OUT") == 0) {
+            if(i + 1 < argc) {
+                timeout = atoi(argv[i + 1]);
+            }
+        }
+    }
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -253,7 +284,7 @@ int main(void) {
             }
 
             //we are done sending, so now close socket 
-            close(new_fd);
+           // close(new_fd);
 
             // Log disconnection
             log_activity("Connection closed", s);

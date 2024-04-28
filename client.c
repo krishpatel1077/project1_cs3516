@@ -167,7 +167,7 @@
 
     printf("client: received '%s'\n",buf);
 
-    if (send(sockfd, "\nHello, server!", 14, 0) == -1) {
+    if (send(sockfd, "Hello, server!\n", 14, 0) == -1) {
         perror("send");
     }
 
@@ -199,13 +199,14 @@
         bzero(sendingBuf, fileSize);
     }
 
-    //receive url size and data
-    receive_and_print(sockfd);
+    
 
     //while loop to receive things 
-    //while(1) { //end when code 2 is received (timeout)
+    while(1) { //end when code 2 is received (timeout)
 
-    //}
+        //receive url size and data
+        receive_and_print(sockfd);
+    }
 
     close(sockfd);
 
