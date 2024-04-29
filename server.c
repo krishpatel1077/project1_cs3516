@@ -127,7 +127,6 @@ void do_url(int new_fd) {
     system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
             
     //send url result, size, and return code 
-
     off_t fileSize; 
     fileSize = get_file_size("QRresult.txt");
 
@@ -138,7 +137,7 @@ void do_url(int new_fd) {
     char sizeBuf [sizeof(off_t)];
 
     int sendingSize; 
-    blkcnt_t(sendingBuf, fileSize);
+    bzero(sendingBuf, fileSize);
 
     if (dataFile == NULL) {
         perror("opening file");
@@ -293,9 +292,9 @@ int main(int argc, char* argv[]) {
             int doClose = 0;
             while(doClose == 0) {
 
-                //check for timeout 
+                //check for timeout (10 used for testing purposes)
                 printf("%d\n", time(&startTime) - startTime > 10);
-                if(time(NULL) - startTime > 10) {
+                if(time(&startTime) - startTime > 10) {
                     //timeout time reached
 
                     //report timeout using return code 
