@@ -117,6 +117,52 @@ FILE* receive_and_write(int sockfd) {
     return file; 
 }
 
+//Function to accept file contents, convert to url, and send back
+void do_url(int new_fd) {
+    // Write received data to a file
+    FILE* qrFile; 
+    qrFile = receive_and_write(new_fd);
+
+    //convert received_data.png to QR code, print results to QRresult.txt 
+    system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
+            
+    //send url result, size, and return code 
+
+    off_t fileSize; 
+    fileSize = get_file_size("QRresult.txt");
+
+    FILE * dataFile;
+    dataFile = fopen("QRresult.txt", "r");
+
+    char sendingBuf [fileSize];
+    char sizeBuf [sizeof(off_t)];
+
+    int sendingSize; 
+    blkcnt_t(sendingBuf, fileSize);
+
+    if (dataFile == NULL) {
+        perror("opening file");
+        exit(1);
+    }
+
+    //send url size first
+    if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
+            perror("sending url size value");
+    }
+       
+    printf("server: sending the url size %ld\n", fileSize);
+
+    //loop to send actual data 
+    while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
+        if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
+                perror("sending file");
+        }
+       
+        printf("server: sent %d bytes of url to client\n", sendingSize);
+        bzero(sendingBuf, fileSize);
+    }
+}
+
 int main(int argc, char* argv[]) {
     int sockfd, new_fd, numbytes; // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
@@ -127,13 +173,13 @@ int main(int argc, char* argv[]) {
     char s[INET6_ADDRSTRLEN];
     char buf[MAXDATASIZE];
     int rv;
-    FILE* qrFile; 
+    
 
     //parse command line arguments for options 
     strcpy(PORT, DEFAULT_PORT); //intialize port with defualt val
     for(int i = 0; i < argc; i++) {
         if(strcmp(argv[i], "PORT") == 0) {
-            strcpy(PORT, argv[i + 1]);
+            strcpy(PORT, argv[i + 1]); //change port to arg value 
         }
         else if(strcmp(argv[i], "RATE") == 0) {
             if(i + 2 < argc) {
@@ -228,7 +274,7 @@ int main(int argc, char* argv[]) {
             close(sockfd); // child doesn't need the listener
 
             // Send message to client
-            if (send(new_fd, "Hello, world!", 13, 0) == -1) {
+            if (send(new_fd, "Enter 'close' to disconnect, 'shutdown' to turn off server, or a qr code filename to get URL: \n", 98, 0) == -1) {
                 perror("send");
             }
 
@@ -241,58 +287,48 @@ int main(int argc, char* argv[]) {
 
             printf("server: received '%s'\n",buf);
 
-            // Write received data to a file
-            qrFile = receive_and_write(new_fd);
+            //start inactivity timer (last recv)
+            time_t startTime = time(NULL); 
 
-            //convert received_data.png to QR code, print results to QRresult.txt 
-            system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
-            
-            //send url result, size, and return code 
+            int doClose = 0;
+            while(doClose == 0) {
 
-            off_t fileSize; 
-            fileSize = get_file_size("QRresult.txt");
+                //check for timeout 
+                printf("%d\n", time(&startTime) - startTime > 10);
+                if(time(NULL) - startTime > 10) {
+                    //timeout time reached
 
-            FILE * dataFile;
-            dataFile = fopen("QRresult.txt", "r");
+                    //report timeout using return code 
+                    printf("timeout reached\n");
 
-            char sendingBuf [fileSize];
-            char sizeBuf [sizeof(off_t)];
+                    //close connection 
+                    close(new_fd);
 
-            int sendingSize; 
-            bzero(sendingBuf, fileSize);
+                    // Log disconnection
+                    log_activity("Connection closed", s);
 
-            if (dataFile == NULL) {
-                perror("opening file");
-                exit(1);
-            }
+                    doClose = 1; 
 
-            //send url size first
-            if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
-                perror("sending url size value");
-            }
-       
-            printf("server: sending the url size %ld\n", fileSize);
-
-            //loop to send actual data 
-            while((sendingSize = fread(sendingBuf, 1, fileSize, dataFile)) > 0) {
-                if(send(new_fd, sendingBuf, sendingSize, 0) == -1) {
-                     perror("sending file");
+                }        
+                
+                //get command line input
+                char input[100];
+                if((scanf("%s", input) < 0)) {
+                    perror("reading input");
+                    exit(0);
                 }
-       
-                printf("server: sent %d bytes of url to client\n", sendingSize);
-                bzero(sendingBuf, fileSize);
+
+                // if input is close, do close function
+
+                //if input is shutdown, do shutdown function 
+
+                //if input is a file, find url
+                do_url(new_fd);
+
             }
-
-            //we are done sending, so now close socket 
-           // close(new_fd);
-
-            // Log disconnection
-            log_activity("Connection closed", s);
-
-            exit(0);
+            close(new_fd); // parent doesn't need this
         }
-        close(new_fd); // parent doesn't need this
-    }
 
-    return 0;
+        return 0;
+    }
 }
