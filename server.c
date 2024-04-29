@@ -293,8 +293,8 @@ int main(int argc, char* argv[]) {
             while(doClose == 0) {
 
                 //check for timeout (10 used for testing purposes)
-                printf("%d\n", time(&startTime) - startTime > 10);
-                if(time(&startTime) - startTime > 10) {
+                printf("%d\n", time(NULL) - startTime > 10);
+                if(time(NULL) - startTime > 10) {
                     //timeout time reached
 
                     //report timeout using return code 
@@ -310,20 +310,44 @@ int main(int argc, char* argv[]) {
 
                 }        
                 
-                //get command line input
-                char input[100];
-                if((scanf("%s", input) < 0)) {
-                    perror("reading input");
-                    exit(0);
+                //get command line input (0 - close, 1 - shutdown, 2 - file)
+                int input;
+                char numBuf[2];
+                numBuf[1] = '\0';
+
+                if ((numbytes = recv(new_fd, numBuf, 1, 0)) == -1) {
+                    perror("recv input");
+                    exit(1);
                 }
 
+                input = atoi(numBuf);
+                printf("input: %d\n", input);
+
                 // if input is close, do close function
+                if(input == 0) {
+                    //do close function
+                    printf("do close function\n");
+                }
 
                 //if input is shutdown, do shutdown function 
+                if(input == 1) {
+                    printf("do shutdown function\n");
+                    //do shutdown function
+                }
 
                 //if input is a file, find url
-                do_url(new_fd);
+                if(input == 2) {
+                    printf("do url function\n");
+                    //do url function
+                    do_url(new_fd);
+                }
 
+                else {
+                    //printf("did nothing\n");
+                }
+
+                input = 4; 
+                
             }
             close(new_fd); // parent doesn't need this
         }

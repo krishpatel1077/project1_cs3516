@@ -101,28 +101,59 @@
 
 }
 
+void send_file_data(char* name, int sockfd) {
+    off_t fileSize; 
+    FILE *qrFile;
+
+    //find file size given the file descriptor
+    fileSize = get_file_size(name);
+    printf("Your inputted file size is %ld\n", fileSize);
+
+    //send file data
+    qrFile = fopen(name, "r");
+    char sendingBuf [fileSize];
+    int sendingSize; 
+
+    bzero(sendingBuf, fileSize);
+
+    if (qrFile == NULL) {
+        perror("opening file");
+    }
+
+    //send file size first
+    if(send(sockfd, &fileSize, sizeof(off_t), 0) == -1) {
+        perror("sending file size value");
+    }
+       
+    printf("client: sending the file size %ld\n", fileSize);
+
+    //loop to send actual data 
+    while((sendingSize = fread(sendingBuf, 1, fileSize, qrFile)) > 0) {
+        if(send(sockfd, sendingBuf, sendingSize, 0) == -1) {
+            perror("sending file");
+        }
+       
+        printf("client: sent %d bytes of inputted file to server\n", sendingSize);
+        bzero(sendingBuf, fileSize);
+    }
+}
+
  int main(int argc, char *argv[]) {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
-    FILE *qrFile;
     int qrFD;
     off_t sendingOffset; 
     int sentBytes; 
     off_t remainingData;
     int fd; 
-    off_t fileSize; 
-
+    
     if (argc != 3) {
         fprintf(stderr,"usage: client hostname, file\n");
         exit(1);
-    }
-
-    //find file size given the file descriptor
-    fileSize = get_file_size(argv[2]);
-    printf("Your inputted file size is %ld\n", fileSize);    
+    }    
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -171,33 +202,41 @@
         perror("send");
     }
 
-    //send file data
-    qrFile = fopen(argv[2], "r");
-    char sendingBuf [fileSize];
-    int sendingSize; 
-
-    bzero(sendingBuf, fileSize);
-
-    if (qrFile == NULL) {
-        perror("opening file");
-    }
-
-    //send file size first
-    if(send(sockfd, &fileSize, sizeof(off_t), 0) == -1) {
-        perror("sending file size value");
-    }
-       
-    printf("client: sending the file size %ld\n", fileSize);
-
-    //loop to send actual data 
-    while((sendingSize = fread(sendingBuf, 1, fileSize, qrFile)) > 0) {
-        if(send(sockfd, sendingBuf, sendingSize, 0) == -1) {
-            perror("sending file");
+    int doClose = 0; 
+    while(doClose == 0) {
+        //get command line input
+        char input[100];
+        if((scanf("%s", input) < 0)) {
+            perror("reading input");
+            exit(0);
         }
-       
-        printf("client: sent %d bytes of inputted file to server\n", sendingSize);
-        bzero(sendingBuf, fileSize);
+
+        if(strcmp(input, "close") == 0) {
+            //send that the client wants to close (0)
+            if (send(sockfd, "0", 1, 0) == -1) {
+                perror("send");
+            }
+            memset(input, 0, strlen(input));
+        }
+        else if (strcmp(input, "shutdown") == 0) {
+            //send that the client wants to shutdown (1)
+            if (send(sockfd, "1", 1, 0) == -1) {
+                perror("send");
+            }
+            memset(input, 0, strlen(input));
+        }
+        else if(strlen(input) > 0) {
+            //assume png is inputted, and send it (2)
+            if (send(sockfd, "2", 1, 0) == -1) {
+                perror("send");
+            }
+            send_file_data(input, sockfd);
+            memset(input, 0, strlen(input));
+            receive_and_print(sockfd);
+        }
     }
+
+    
 
     
 
