@@ -290,11 +290,11 @@ int main(int argc, char* argv[]) {
             time_t startTime = time(NULL); 
 
             int doClose = 0;
-            while(doClose == 0) {
+            while(doClose == 0) { //change to have time while loop --> deal w/ one of the two after loop
 
                 //check for timeout (10 used for testing purposes)
-                printf("%d\n", time(NULL) - startTime > 10);
-                if(time(NULL) - startTime > 10) {
+                printf("%ld\n", time(NULL) - startTime);
+                if(time(NULL) - startTime > timeout) {
                     //timeout time reached
 
                     //report timeout using return code 
@@ -316,12 +316,14 @@ int main(int argc, char* argv[]) {
                 numBuf[1] = '\0';
 
                 if ((numbytes = recv(new_fd, numBuf, 1, 0)) == -1) {
-                    perror("recv input");
-                    exit(1);
+                    //perror("recv input");
+                    //exit(1);
+                    input = 4; 
                 }
-
-                input = atoi(numBuf);
-                printf("input: %d\n", input);
+                else {
+                    input = atoi(numBuf);
+                    printf("input: %d\n", input);
+                }
 
                 // if input is close, do close function
                 if(input == 0) {

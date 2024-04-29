@@ -34,8 +34,9 @@
     struct stat buf; 
 
     if(stat(file, &buf) == -1) {
-        perror("Get file size:");
-        exit(EXIT_FAILURE);
+        //perror("Get file size:");
+        //exit(EXIT_FAILURE);
+        return 0; 
     }
 
     return buf.st_size; 
@@ -107,6 +108,7 @@ void send_file_data(char* name, int sockfd) {
 
     //find file size given the file descriptor
     fileSize = get_file_size(name);
+    
     printf("Your inputted file size is %ld\n", fileSize);
 
     //send file data
@@ -226,13 +228,22 @@ void send_file_data(char* name, int sockfd) {
             memset(input, 0, strlen(input));
         }
         else if(strlen(input) > 0) {
-            //assume png is inputted, and send it (2)
-            if (send(sockfd, "2", 1, 0) == -1) {
-                perror("send");
+            //assume png is inputted, and send it if file size != 0 (2)
+            off_t fileSize; 
+            fileSize = get_file_size(input);
+
+            if(fileSize == 0) {
+                printf("Error code 1: Failure - no file found\n"); 
             }
-            send_file_data(input, sockfd);
-            memset(input, 0, strlen(input));
-            receive_and_print(sockfd);
+
+            else {
+                if (send(sockfd, "2", 1, 0) == -1) {
+                    perror("send");
+                }
+                send_file_data(input, sockfd);
+                memset(input, 0, strlen(input));
+                receive_and_print(sockfd);
+            }
         }
     }
 
