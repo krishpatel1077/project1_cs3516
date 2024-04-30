@@ -299,7 +299,7 @@ int main(int argc, char* argv[]) {
             while(doClose == 0) { //change to have time while loop --> deal w/ one of the two after loop
 
                 //check for timeout (10 used for testing purposes)
-                printf("%ld\n", time(NULL) - startTime);
+                //printf("%ld\n", time(NULL) - startTime);
                 if(time(NULL) - startTime > timeout) {
                     //timeout time reached
 
@@ -334,7 +334,6 @@ int main(int argc, char* argv[]) {
                 // if input is close, do close function
                 if(input == 0) {
                     //do close function
-                    printf("do close function\n");
 
                     //send server code 2 and message 
                     if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
@@ -343,6 +342,8 @@ int main(int argc, char* argv[]) {
 
                     //close connection 
                     close(new_fd); 
+
+                    printf("Server: closed connection with %s\n", s);
 
                 }
 
