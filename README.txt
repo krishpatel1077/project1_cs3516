@@ -19,3 +19,6 @@ value in near the top of the main() fuction to the name of your file.
 
 To run the program, type "make" in your terminal. You can also 
 run "make clean" and "make all".
+
+
+qr code size limit of 7000

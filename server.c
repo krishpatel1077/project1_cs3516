@@ -340,26 +340,8 @@ int main(int argc, char* argv[]) {
             time_t startTime = time(NULL); 
 
             int doClose = 0;
-            while(doClose == 0) { //change to have time while loop --> deal w/ one of the two after loop
 
-                //check for timeout (10 used for testing purposes)
-                //printf("%ld\n", time(NULL) - startTime);
-                if(time(NULL) - startTime > timeout) {
-                    //timeout time reached
-
-                    //report timeout using return code 
-                    printf("timeout reached\n");
-
-                    //close connection 
-                    close(new_fd);
-
-                    // Log disconnection
-                    log_activity("Connection closed", s);
-
-                    doClose = 1; 
-
-                }        
-                
+            while(doClose == 0 && (time(NULL) - startTime > timeout)) { 
                 //get command line input (3333 - close, 1111 - shutdown, 2222 - file)
                 int input;
                 char numBuf[2];
@@ -390,13 +372,12 @@ int main(int argc, char* argv[]) {
                     close(new_fd); 
                     doClose = 1; 
 
-                    printf("Server: closed connection with %s\n", s);
+                    printf("server: closed connection with %s\n", s);
 
                 }
 
                 //if input is shutdown, do shutdown function 
                 if(input == 1111) {
-                    printf("do shutdown function\n");
                     //do shutdown function
                 }
 
@@ -412,6 +393,26 @@ int main(int argc, char* argv[]) {
                 
             }
             close(new_fd); // parent doesn't need this
+
+            //check for timeout
+            if(time(NULL) - startTime > 10) {
+                    //timeout time reached
+
+                    //report timeout using return code 
+                    printf("server: timeout reached\n");
+
+                    //send server code 2 and message 
+                    if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
+                        perror("send");
+                    }
+
+                    //close connection 
+                    close(new_fd);
+
+                    // Log disconnection
+                    printf("server: closed connection with %s\n", s);
+                    log_activity("Connection closed", s);
+            } 
         }
         //printf("here");
 

@@ -168,7 +168,7 @@ void send_file_data(char* name, int sockfd) {
     off_t remainingData;
     int fd; 
     
-    if (argc != 3) {
+    if (argc != 2) {
         fprintf(stderr,"usage: client hostname, file\n");
         exit(1);
     }    
@@ -224,12 +224,14 @@ void send_file_data(char* name, int sockfd) {
 
     int doClose = 0; 
     while(doClose == 0) {
+        printf("in loop");
         //get command line input
         char input[100];
-        if((scanf("%s", input) < 0)) {
-            perror("reading input");
-            exit(0);
+        int n = scanf("%s", input);
+        if(n != 1) {
+            memset(input, 0, strlen(input));
         }
+        printf("hhh%s\n", input);
 
         if(strcmp(input, "close") == 0) {
             //send that the client wants to close (3)
@@ -257,6 +259,7 @@ void send_file_data(char* name, int sockfd) {
                 perror("send");
             }
             memset(input, 0, strlen(input));
+            doClose = 1;
         }
         else if(strlen(input) > 0) {
             //assume png is inputted, and send it if file size != 0 (2)
@@ -278,6 +281,21 @@ void send_file_data(char* name, int sockfd) {
                 receive_and_print(sockfd);
             }
         }
+        
+            //check for timeout
+
+            printf("check for timeout");
+            if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
+                perror("recv");
+                exit(1);
+            }
+
+            buf[numbytes] = '\0';
+
+            printf("'%s'\n",buf);
+            close(sockfd); 
+            doClose = 1; 
+        
     }
 
     close(sockfd);
