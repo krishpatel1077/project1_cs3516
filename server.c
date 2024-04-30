@@ -423,7 +423,6 @@ int main(int argc, char* argv[]) {
 
                 //if input is shutdown, do shutdown function 
                 if(input == 1111) {
-                    printf("do shutdown function\n");
                     //do shutdown function
 
                     //send server code 2 and message 
