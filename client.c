@@ -218,7 +218,18 @@ void send_file_data(char* name, int sockfd) {
             if (send(sockfd, "0", 1, 0) == -1) {
                 perror("send");
             }
-            memset(input, 0, strlen(input));
+
+            if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
+                perror("recv");
+                exit(1);
+            }
+
+            buf[numbytes] = '\0';
+
+            printf("client: received '%s'\n",buf);
+
+            close(sockfd); 
+            exit(0); 
         }
         else if (strcmp(input, "shutdown") == 0) {
             //send that the client wants to shutdown (1)

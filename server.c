@@ -123,7 +123,12 @@ void do_url(int new_fd) {
     FILE* qrFile; 
     qrFile = receive_and_write(new_fd);
 
-    //convert received_data.png to QR code, print results to QRresult.txt 
+    if(qrFile == NULL) {
+
+    }
+
+    else {
+            //convert received_data.png to QR code, print results to QRresult.txt 
     system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
             
     //send url result, size, and return code 
@@ -159,6 +164,7 @@ void do_url(int new_fd) {
        
         printf("server: sent %d bytes of url to client\n", sendingSize);
         bzero(sendingBuf, fileSize);
+    }
     }
 }
 
@@ -329,6 +335,15 @@ int main(int argc, char* argv[]) {
                 if(input == 0) {
                     //do close function
                     printf("do close function\n");
+
+                    //send server code 2 and message 
+                    if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
+                        perror("send");
+                    }
+
+                    //close connection 
+                    close(new_fd); 
+
                 }
 
                 //if input is shutdown, do shutdown function 
