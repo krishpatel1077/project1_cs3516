@@ -9,7 +9,9 @@ code, and the server will decode the file and return the URL, if available, or a
 If a file is not a valid QR code, then a server return code failure will be sent. Other 
 operations, 'close' and 'shutdown', are used to terminate the client and 
 server connections. These commands also return server codes to inform the client on 
-what is occuring. 
+what is occuring. If you receive failure codes, or have already received a URL, 
+you can still use the command line commands 'close', 'shutdown' and provide a new 
+QR code file name to be processd. 
 
 When running the server program, you can specify the listening port, 
 rate limit messages, the number of max users, and the time for time out connections. 
