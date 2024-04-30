@@ -224,17 +224,19 @@ void send_file_data(char* name, int sockfd) {
 
     int doClose = 0; 
     while(doClose == 0) {
-        printf("in loop");
+        
         //get command line input
+        printf("before");
         char input[100];
-        int n = scanf("%s", input);
-        if(n != 1) {
-            memset(input, 0, strlen(input));
+        if((scanf("%s", input) < 0)) {
+            perror("command line input");
+            exit(0);
         }
-        printf("hhh%s\n", input);
+        printf("here!!!!");
 
         if(strcmp(input, "close") == 0) {
             //send that the client wants to close (3)
+            printf("close");
             if (send(sockfd, "3333", 4, 0) == -1) {
                 perror("send");
             }
@@ -249,17 +251,31 @@ void send_file_data(char* name, int sockfd) {
             printf("'%s'\n",buf);
 
             close(sockfd); 
-            doClose = 1;
             exit(0); 
             memset(input, 0, strlen(input));
+            doClose = 1;
         }
         else if (strcmp(input, "shutdown") == 0) {
             //send that the client wants to shutdown (1)
             if (send(sockfd, "1111", 4, 0) == -1) {
                 perror("send");
             }
+
+            //receive message from server
+            if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
+                perror("recv");
+                exit(1);
+            }
+
+            buf[numbytes] = '\0';
+
+            printf("'%s'\n",buf);
+
+            close(sockfd); 
+            exit(0); 
             memset(input, 0, strlen(input));
             doClose = 1;
+
         }
         else if(strlen(input) > 0) {
             //assume png is inputted, and send it if file size != 0 (2)

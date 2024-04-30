@@ -379,6 +379,20 @@ int main(int argc, char* argv[]) {
                 //if input is shutdown, do shutdown function 
                 if(input == 1111) {
                     //do shutdown function
+                    printf("do shutdown function\n");
+                    //send server code 2 and message 
+                    if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
+                        perror("send");
+                    }
+
+                    //close connection 
+                    close(new_fd); 
+                    doClose = 1; 
+
+                    printf("server: closed connection with %s\n", s);
+
+                    //close parent socket
+                    close(sockfd); 
                 }
 
                 //if input is a file, find url
