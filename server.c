@@ -159,7 +159,6 @@ void do_url(int new_fd, char* s) {
     dataFile = fopen("QRresult.txt", "r");
 
     char sendingBuf [fileSize];
-    char sizeBuf [sizeof(off_t)];
 
     int sendingSize; 
     bzero(sendingBuf, fileSize);
@@ -321,7 +320,6 @@ int main(int argc, char* argv[]) {
     log_file = fopen("admin_log.txt", "a+");
     if (log_file == NULL) {
         perror("Error opening log file");
-        return;
     }
 
     // Write log entry to file

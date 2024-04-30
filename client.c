@@ -162,11 +162,7 @@ void send_file_data(char* name, int sockfd) {
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
-    int qrFD;
-    off_t sendingOffset; 
-    int sentBytes; 
-    off_t remainingData;
-    int fd; 
+    
     
     //assign correct port
     strcpy(PORT, DEFAULT_PORT);
