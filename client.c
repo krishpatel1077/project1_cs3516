@@ -14,10 +14,10 @@
 
  #include <arpa/inet.h>
 
- #define PORT "7099" // the port client will be connecting to
- #define IP "10.23.21.1" //IP 
+ #define DEFAULT_PORT "7159" // the port client will be connecting to
+ #define IP "10.23.36.1" //IP 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
-
+ char PORT[6];
  ///starter code used from beej's guide to network programming
 
 
@@ -168,10 +168,9 @@ void send_file_data(char* name, int sockfd) {
     off_t remainingData;
     int fd; 
     
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname, file\n");
-        exit(1);
-    }    
+    strcpy(PORT, DEFAULT_PORT);
+    if (strcmp(argv[0], "PORT") == 0)
+        strcpy(PORT, argv[1]);    
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
