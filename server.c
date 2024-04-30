@@ -127,7 +127,7 @@ FILE* receive_and_write(int sockfd) {
 }
 
 //Function to accept file contents, convert to url, and send back
-void do_url(int new_fd) {
+void do_url(int new_fd, char* s) {
     // Write received data to a file
     FILE* qrFile; 
     qrFile = receive_and_write(new_fd);
@@ -140,6 +140,9 @@ void do_url(int new_fd) {
         }
         else {
             printf("server: sending return code 1 - Failure\n");
+
+            // Log 
+            log_activity("Find and send URL failure", s);
         }
     }
 
@@ -167,6 +170,9 @@ void do_url(int new_fd) {
         if(send(new_fd, &one, sizeof(int), 0) == -1) {
             perror("sending return code");
         }
+
+        // Log 
+        log_activity("Find and send URL failure", s);
     }
 
     //send return code failure - 1 if url not found
@@ -177,6 +183,9 @@ void do_url(int new_fd) {
         }
         else {
             printf("server: sending return code 1 - Failure\n");
+
+            // Log 
+            log_activity("Find and send URL failure", s);
         }
     }
 
@@ -190,6 +199,9 @@ void do_url(int new_fd) {
         }
         else {
             printf("server: sending return code 0 - success\n");
+
+            // Log 
+            log_activity("Find and send URL success", s);
         }
 
     //send url size first
@@ -304,6 +316,18 @@ int main(int argc, char* argv[]) {
 
     printf("server: waiting for connections...\n");
 
+    //Log that server is up and listening
+    FILE *log_file;
+    log_file = fopen("admin_log.txt", "a+");
+    if (log_file == NULL) {
+        perror("Error opening log file");
+        return;
+    }
+
+    // Write log entry to file
+    fprintf(log_file, "----\nServer is up and listening...\n");
+    fclose(log_file);
+
     while (1) { // main accept() loop
         sin_size = sizeof their_addr;
 
@@ -356,7 +380,7 @@ int main(int argc, char* argv[]) {
                     close(new_fd);
 
                     // Log disconnection
-                    log_activity("Connection closed", s);
+                    log_activity("Connection timeout", s);
 
                     doClose = 1; 
 
@@ -394,6 +418,9 @@ int main(int argc, char* argv[]) {
 
                     printf("server: closed connection with %s\n", s);
 
+                    // Log connection
+                    log_activity("Connection closed", s);
+
                 }
 
                 //if input is shutdown, do shutdown function 
@@ -414,7 +441,9 @@ int main(int argc, char* argv[]) {
                     close(sockfd); 
                     printf("server: disconnected\n");
                     
-                    printf("HERE");
+                    // Log connection
+                    log_activity("Connection closed", s);
+
                     doClose = 1; 
                     return 0;
 
@@ -425,7 +454,7 @@ int main(int argc, char* argv[]) {
                 if(input == 2222) {
                     //printf("do url function\n");
                     //do url function
-                    do_url(new_fd);
+                    do_url(new_fd, s);
                 }
 
                 input = 4; 
