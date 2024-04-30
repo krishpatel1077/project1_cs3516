@@ -1,24 +1,51 @@
 # project1_cs3516
-Project 1 CS 3516 - Krish Patel, Ceci Herriman
+Project 2 CS 3516 - Krish Patel, Ceci Herriman
 
-Our project is a packet analyzer that takes in a packet capture 
-file, and prints out statistics and summaries about the packets
-in the capture. For each packet, the program returns the date, 
-time, duration since first packet, and length. It also prints all of the 
-ethernet source and destination addresses with the number of occurences for 
-each. If the packet has associated ip source and destination addresses, it
-prints those with the # of occurences as well. The analyzer can also detect
-if ARP or UDP is in use, and prints machine MAC and IP addresses for senders and 
-recipients in ARP along with source and destination ports for UDP usages.
-All addresses printed have associated occurence values. Finally, the 
-analyzer returns the total number of packets processed, along 
-with the average, minimum, and maxiumum packet lengths. 
+Our project involves a server and client program where the client can connect to the 
+server, send a QR code PNG file, and receive the URL of the QR code. When the client 
+program is running and connected to the server, you can type the name of the QR 
+code, and the server will return the URL, if available, or a return code error. If a
+file is not a valid QR code, then a server return code failure will be sent. Other 
+operations, 'close' and 'shutdown', are used to terminate the client and 
+server connections. These commands also return server codes to inform the client on 
+what is occuring. 
 
-To specify a .pcap file to be analyzed, change the "fname" variable 
-value in near the top of the main() fuction to the name of your file. 
+When running the server program, you can specify the listening port, 
+rate limit messages, the number of max users, and the time for time out connections. 
+These arguments can be in any order, with the value coming after indicators PORT, RATE, 
+MAX USERS, and TIME OUT. Similarly, when running the client program, you need to
+specify the port by writing the value after the word PORT. The default value of the 
+server's port is 2012. 
+
+The project features a security restriction of a max file size of 800KB (to allow for 
+our transparent.png file to be sent). For additional security, the server also 
+does not process any image file bytes that exceed the size specified by the client. 
+
+Additionally, the server maintains an administrative log that keeps track of 
+the time a client connects and their IP address. 
 
 To run the program, type "make" in your terminal. You can also 
-run "make clean" and "make all".
+run "make clean" and "make all". Then, run ./server or ./client with 
+the appropiate arguments mentioned above. 
 
+--Note: 
+We understand that this project is incomplete. Three days before the project submission, 
+we became aware to parts of the project needed to be implemented that were not explicitly 
+stated in the project guidelines. At that time, we only needed to implement error checking, 
+rate limiting, and small concurrent user functionalities. Due to our misconception of what
+and how features of the project were implemented, we had a plan of action that could no 
+longer be achieved because we had to spend our time re-doing a lot of our functionality to 
+meet the desired performance of the server. 
 
-qr code size limit of 7000
+More specifically, we did not read anything specifying that the client needed to interact 
+with the program via stdin, so we assumed that the program would take in the file name 
+in the arguments, wait for the QR result, and then exit. When we realized this was not the 
+case, our implementation plans for everything still needed to be done completely changed. 
+
+We acknowledge the fact that many of the project specifications we missed were on the forum, 
+and we mistakenly based the vast majority of our project and guidelines planning on the 
+Project 2 resources page when we should have looked into forum posts before planning. 
+
+If more time was available, errors in the "shutdown" implementation, finalization of the 
+"timeout" feature, and additions to the admin log would be finished. 
+

@@ -168,17 +168,12 @@ void send_file_data(char* name, int sockfd) {
     off_t remainingData;
     int fd; 
     
-   /* if (argc != 2) {
-        fprintf(stderr,"usage: PORT #\n");
-        exit(1);
-    }
-   */
+    //assign correct port
     strcpy(PORT, DEFAULT_PORT);
-    if (strcmp(argv[0], "PORT") == 0) {
-        strcpy(PORT, argv[1]);    
+
+    if (strcmp(argv[1], "PORT") == 0) {
+        strcpy(PORT, argv[2]);    
     }
-    
-    printf("port %s", PORT); 
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -232,6 +227,7 @@ void send_file_data(char* name, int sockfd) {
     int doClose = 0; 
     while(doClose == 0) {
         //get command line input
+        
         char input[100];
         int n = scanf("%s", input);
         if(n != 1) {
@@ -299,19 +295,19 @@ void send_file_data(char* name, int sockfd) {
             }
         }
         
-            //check for timeout
+        //check for timeout
 
-            printf("check for timeout");
-            if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
-                perror("recv");
-                exit(1);
-            }
+        //printf("check for timeout");
+        //   if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
+        //        perror("recv");
+        //        exit(1);
+        //    }
 
-            buf[numbytes] = '\0';
+        //    buf[numbytes] = '\0';
 
-            printf("'%s'\n",buf);
-            close(sockfd); 
-            doClose = 1; 
+        //    printf("'%s'\n",buf);
+        //    close(sockfd); 
+        //    doClose = 1; 
         
     }
 

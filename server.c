@@ -88,7 +88,7 @@ FILE* receive_and_write(int sockfd) {
         return file; 
     }
 
-    //check to see if length is greater than our security limit of 7000
+    //check to see if length is greater than our security limit of 800000
     if(length > 800000) {
         file = NULL; 
         return file;
@@ -223,6 +223,8 @@ int main(int argc, char* argv[]) {
     char buf[MAXDATASIZE];
     int rv;
     
+    //open admin log
+    fopen("admin_log.txt", "w");
 
     //parse command line arguments for options 
     strcpy(PORT, DEFAULT_PORT); //intialize port with defualt val
@@ -411,8 +413,10 @@ int main(int argc, char* argv[]) {
                     //close parent socket 
                     close(sockfd); 
                     printf("server: disconnected\n");
-                    exit(0); 
+                    
+                    printf("HERE");
                     doClose = 1; 
+                    return 0;
 
 
                 }
@@ -428,11 +432,11 @@ int main(int argc, char* argv[]) {
                 bzero(numBuf, 2);
                 
             }
-            close(new_fd); // parent doesn't need this
+
+            return 0;
         }
-        //printf("here");
 
     }
-    close(sockfd); 
+
     return 0; 
 }
