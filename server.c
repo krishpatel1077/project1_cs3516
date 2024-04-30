@@ -78,21 +78,30 @@ off_t get_file_size(char* file) {
 
 // Function to receive data from client and write it to a file
 FILE* receive_and_write(int sockfd) {
+    FILE* file; 
+
     // Receive the length of the data
     off_t length;
     if (recv(sockfd, &length, sizeof(off_t), 0) == -1) {
         perror("recv length");
-        exit(EXIT_FAILURE);
+        file = NULL; 
+        return file; 
+    }
+
+    //check to see if length is greater than our security limit of 7000
+    if(length > 800000) {
+        file = NULL; 
+        return file;
     }
 
     // Allocate memory for receiving buffer
     char buffer[MAXDATASIZE];
 
     // Open a file to write the received data
-    FILE *file = fopen("received_data.png", "wb");
+    file = fopen("received_data.png", "wb");
     if (file == NULL) {
         perror("fopen");
-        exit(EXIT_FAILURE);
+        return file; 
     }
 
     u_int32_t bytesReceivedSoFar = 0;
@@ -124,11 +133,19 @@ void do_url(int new_fd) {
     qrFile = receive_and_write(new_fd);
 
     if(qrFile == NULL) {
-
+        //if null, program could not receive and write, so send return code 1
+        int one = 1;
+        if(send(new_fd, &one, sizeof(int), 0) == -1) {
+            perror("sending return code");
+        }
+        else {
+            printf("server: sending return code 1 - Failure\n");
+        }
     }
 
     else {
-            //convert received_data.png to QR code, print results to QRresult.txt 
+
+    //convert received_data.png to QR code, print results to QRresult.txt 
     system("java -cp javase.jar:core.jar com.google.zxing.client.j2se.CommandLineRunner received_data.png > QRresult.txt");
             
     //send url result, size, and return code 
@@ -145,13 +162,39 @@ void do_url(int new_fd) {
     bzero(sendingBuf, fileSize);
 
     if (dataFile == NULL) {
-        perror("opening file");
-        exit(1);
+        //send failure code 1
+        int one = 1;
+        if(send(new_fd, &one, sizeof(int), 0) == -1) {
+            perror("sending return code");
+        }
     }
+
+    //send return code failure - 1 if url not found
+    if(fileSize == 0) {
+        int one = 1;
+        if(send(new_fd, &one, sizeof(int), 0) == -1) {
+            perror("sending return code");
+        }
+        else {
+            printf("server: sending return code 1 - Failure\n");
+        }
+    }
+
+    //if url size > 0, continue
+    else {
+    
+    //send return code success - 0 
+    int zero = 0;
+        if(send(new_fd, &zero, sizeof(int), 0) == -1) {
+            perror("sending return code");
+        }
+        else {
+            printf("server: sending return code 0 - success\n");
+        }
 
     //send url size first
     if(send(new_fd, &fileSize, sizeof(off_t), 0) == -1) {
-            perror("sending url size value");
+        perror("sending url size value");
     }
        
     printf("server: sending the url size %ld\n", fileSize);
@@ -164,6 +207,7 @@ void do_url(int new_fd) {
        
         printf("server: sent %d bytes of url to client\n", sendingSize);
         bzero(sendingBuf, fileSize);
+    }
     }
     }
 }
@@ -264,7 +308,7 @@ int main(int argc, char* argv[]) {
         // New connection established
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
         if (new_fd == -1) {
-            perror("accept");
+            //perror("accept");
             continue;
         }
 
@@ -292,7 +336,7 @@ int main(int argc, char* argv[]) {
 
             printf("server: received '%s'\n",buf);
 
-            //start inactivity timer (last recv)
+            //start inactivity timer (resets when a new command line input is received from client
             time_t startTime = time(NULL); 
 
             int doClose = 0;
@@ -316,23 +360,25 @@ int main(int argc, char* argv[]) {
 
                 }        
                 
-                //get command line input (0 - close, 1 - shutdown, 2 - file)
+                //get command line input (3333 - close, 1111 - shutdown, 2222 - file)
                 int input;
                 char numBuf[2];
                 numBuf[1] = '\0';
 
-                if ((numbytes = recv(new_fd, numBuf, 1, 0)) == -1) {
+                if ((numbytes = recv(new_fd, numBuf, 4, 0)) == -1) {
                     //perror("recv input");
                     //exit(1);
+                    //printf("nothing received\n");
                     input = 4; 
                 }
                 else {
                     input = atoi(numBuf);
-                    printf("input: %d\n", input);
+                    startTime = time(NULL); 
+                    //printf("input: %d, %s\n", input, numBuf);
                 }
 
                 // if input is close, do close function
-                if(input == 0) {
+                if(input == 3333) {
                     //do close function
 
                     //send server code 2 and message 
@@ -342,34 +388,32 @@ int main(int argc, char* argv[]) {
 
                     //close connection 
                     close(new_fd); 
+                    doClose = 1; 
 
                     printf("Server: closed connection with %s\n", s);
 
                 }
 
                 //if input is shutdown, do shutdown function 
-                if(input == 1) {
+                if(input == 1111) {
                     printf("do shutdown function\n");
                     //do shutdown function
                 }
 
                 //if input is a file, find url
-                if(input == 2) {
-                    printf("do url function\n");
+                if(input == 2222) {
+                    //printf("do url function\n");
                     //do url function
                     do_url(new_fd);
                 }
 
-                else {
-                    //printf("did nothing\n");
-                }
-
                 input = 4; 
+                bzero(numBuf, 2);
                 
             }
             close(new_fd); // parent doesn't need this
         }
+        //printf("here");
 
-        return 0;
     }
 }

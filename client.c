@@ -44,7 +44,23 @@
 
  // Function to receive data from client and print it
  void receive_and_print(int sockfd) {
-     // Receive the length of the data
+    //receive server return code 
+    int code; 
+    if (recv(sockfd, &code, sizeof(off_t), 0) == -1) {
+        perror("recv code");
+        exit(EXIT_FAILURE);
+    }
+    else {
+        if(code == 0) {
+            printf("0 - Success, the URL is being returned\n");
+        }
+        else if(code == 1) {
+            printf("1 - Failure, no URL is being returned\n");
+            return; 
+        }
+    }
+
+    // Receive the length of the data
     off_t length;
     if (recv(sockfd, &length, sizeof(off_t), 0) == -1)
     {
@@ -191,17 +207,19 @@ void send_file_data(char* name, int sockfd) {
 
     freeaddrinfo(servinfo); // all done with this structure
 
+    //receive first message from server about command line commands
     if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
         perror("recv");
         exit(1);
     }
  
     buf[numbytes] = '\0';
-
     printf("client: received '%s'\n",buf);
 
+    //respond to received message from server
     if (send(sockfd, "Hello, server!\n", 14, 0) == -1) {
-        perror("send");
+        perror("sending message");
+        exit(1); 
     }
 
     int doClose = 0; 
@@ -214,8 +232,8 @@ void send_file_data(char* name, int sockfd) {
         }
 
         if(strcmp(input, "close") == 0) {
-            //send that the client wants to close (0)
-            if (send(sockfd, "0", 1, 0) == -1) {
+            //send that the client wants to close (3)
+            if (send(sockfd, "3333", 4, 0) == -1) {
                 perror("send");
             }
 
@@ -226,14 +244,16 @@ void send_file_data(char* name, int sockfd) {
 
             buf[numbytes] = '\0';
 
-            printf("client: received '%s'\n",buf);
+            printf("'%s'\n",buf);
 
             close(sockfd); 
+            doClose = 1;
             exit(0); 
+            memset(input, 0, strlen(input));
         }
         else if (strcmp(input, "shutdown") == 0) {
             //send that the client wants to shutdown (1)
-            if (send(sockfd, "1", 1, 0) == -1) {
+            if (send(sockfd, "1111", 4, 0) == -1) {
                 perror("send");
             }
             memset(input, 0, strlen(input));
@@ -244,29 +264,20 @@ void send_file_data(char* name, int sockfd) {
             fileSize = get_file_size(input);
 
             if(fileSize == 0) {
-                printf("Error code 1: Failure - no file found\n"); 
+                printf("1 - Failure, no URL is being returned\n"); 
             }
 
             else {
-                if (send(sockfd, "2", 1, 0) == -1) {
+                if (send(sockfd, "2222", 4, 0) == -1) {
                     perror("send");
                 }
+
                 send_file_data(input, sockfd);
                 memset(input, 0, strlen(input));
+
                 receive_and_print(sockfd);
             }
         }
-    }
-
-    
-
-    
-
-    //while loop to receive things 
-    while(1) { //end when code 2 is received (timeout)
-
-        //receive url size and data
-        receive_and_print(sockfd);
     }
 
     close(sockfd);
