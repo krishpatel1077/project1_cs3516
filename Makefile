@@ -1,20 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
-LIBS = -lpcap
 
-SRC = wireview.c
-OBJ = $(SRC:.c=.o)
-EXEC = wireview
+all: client server
 
-.PHONY: all clean
+client: client.c
+	$(CC) $(CFLAGS) -o $@ $^
 
-all: $(EXEC)
-
-$(EXEC): $(OBJ)
-	$(CC) $(OBJ) -o $@ $(LIBS)
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+server: server.c
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm -f $(EXEC) $(OBJ)
+	rm -f client server
+
+.PHONY: all clean
