@@ -14,8 +14,8 @@
 
  #include <arpa/inet.h>
 
- #define DEFAULT_PORT "7159" // the port client will be connecting to
- #define IP "10.23.36.1" //IP 
+ #define DEFAULT_PORT "7099" // the port client will be connecting to
+ #define IP "10.23.21.1" //IP 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
  char PORT[6];
  ///starter code used from beej's guide to network programming
@@ -168,9 +168,17 @@ void send_file_data(char* name, int sockfd) {
     off_t remainingData;
     int fd; 
     
+   /* if (argc != 2) {
+        fprintf(stderr,"usage: PORT #\n");
+        exit(1);
+    }
+   */
     strcpy(PORT, DEFAULT_PORT);
-    if (strcmp(argv[0], "PORT") == 0)
+    if (strcmp(argv[0], "PORT") == 0) {
         strcpy(PORT, argv[1]);    
+    }
+    
+    printf("port %s", PORT); 
 
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -223,19 +231,15 @@ void send_file_data(char* name, int sockfd) {
 
     int doClose = 0; 
     while(doClose == 0) {
-        
         //get command line input
-        printf("before");
         char input[100];
-        if((scanf("%s", input) < 0)) {
-            perror("command line input");
-            exit(0);
+        int n = scanf("%s", input);
+        if(n != 1) {
+            memset(input, 0, strlen(input));
         }
-        printf("here!!!!");
 
         if(strcmp(input, "close") == 0) {
             //send that the client wants to close (3)
-            printf("close");
             if (send(sockfd, "3333", 4, 0) == -1) {
                 perror("send");
             }
@@ -250,9 +254,9 @@ void send_file_data(char* name, int sockfd) {
             printf("'%s'\n",buf);
 
             close(sockfd); 
+            doClose = 1;
             exit(0); 
             memset(input, 0, strlen(input));
-            doClose = 1;
         }
         else if (strcmp(input, "shutdown") == 0) {
             //send that the client wants to shutdown (1)
@@ -260,21 +264,19 @@ void send_file_data(char* name, int sockfd) {
                 perror("send");
             }
 
-            //receive message from server
+            //receive error code message 
             if ((numbytes = recv(sockfd, buf, 32, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
 
             buf[numbytes] = '\0';
-
             printf("'%s'\n",buf);
 
             close(sockfd); 
+            doClose = 1;
             exit(0); 
             memset(input, 0, strlen(input));
-            doClose = 1;
-
         }
         else if(strlen(input) > 0) {
             //assume png is inputted, and send it if file size != 0 (2)

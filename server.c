@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <time.h> // for time functions
 
-#define DEFAULT_PORT "7099" // the port users will be connecting to
+#define DEFAULT_PORT "2012" // the port users will be connecting to
 #define BACKLOG 10 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
@@ -340,8 +340,26 @@ int main(int argc, char* argv[]) {
             time_t startTime = time(NULL); 
 
             int doClose = 0;
+            while(doClose == 0) { //change to have time while loop --> deal w/ one of the two after loop
 
-            while(doClose == 0 && (time(NULL) - startTime > timeout)) { 
+                //check for timeout (10 used for testing purposes)
+                //printf("%ld\n", time(NULL) - startTime);
+                if(time(NULL) - startTime > timeout) {
+                    //timeout time reached
+
+                    //report timeout using return code 
+                    printf("timeout reached\n");
+
+                    //close connection 
+                    close(new_fd);
+
+                    // Log disconnection
+                    log_activity("Connection closed", s);
+
+                    doClose = 1; 
+
+                }        
+                
                 //get command line input (3333 - close, 1111 - shutdown, 2222 - file)
                 int input;
                 char numBuf[2];
@@ -378,21 +396,25 @@ int main(int argc, char* argv[]) {
 
                 //if input is shutdown, do shutdown function 
                 if(input == 1111) {
-                    //do shutdown function
                     printf("do shutdown function\n");
+                    //do shutdown function
+
                     //send server code 2 and message 
                     if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
                         perror("send");
                     }
 
-                    //close connection 
+                    //close child socket 
                     close(new_fd); 
-                    doClose = 1; 
-
                     printf("server: closed connection with %s\n", s);
 
-                    //close parent socket
+                    //close parent socket 
                     close(sockfd); 
+                    printf("server: disconnected\n");
+                    exit(0); 
+                    doClose = 1; 
+
+
                 }
 
                 //if input is a file, find url
@@ -407,28 +429,10 @@ int main(int argc, char* argv[]) {
                 
             }
             close(new_fd); // parent doesn't need this
-
-            //check for timeout
-            if(time(NULL) - startTime > 10) {
-                    //timeout time reached
-
-                    //report timeout using return code 
-                    printf("server: timeout reached\n");
-
-                    //send server code 2 and message 
-                    if (send(new_fd, "2 - Connection is being closed\n", 32, 0) == -1) {
-                        perror("send");
-                    }
-
-                    //close connection 
-                    close(new_fd);
-
-                    // Log disconnection
-                    printf("server: closed connection with %s\n", s);
-                    log_activity("Connection closed", s);
-            } 
         }
         //printf("here");
 
     }
+    close(sockfd); 
+    return 0; 
 }
