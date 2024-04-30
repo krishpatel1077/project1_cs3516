@@ -15,7 +15,7 @@
  #include <arpa/inet.h>
 
  #define PORT "7099" // the port client will be connecting to
-
+ #define IP "10.23.21.1" //IP 
  #define MAXDATASIZE 100 // max number of bytes we can get at once
 
  ///starter code used from beej's guide to network programming
@@ -176,7 +176,7 @@ void send_file_data(char* name, int sockfd) {
     memset(&hints, 0, sizeof hints); hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(IP, PORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
