@@ -51,3 +51,6 @@ Project 2 resources page when we should have looked into forum posts before plan
 If more time was available, error fixes in the "shutdown" implementation, finalization of the 
 "timeout" feature, and a fix to a small IP printing error in the admin log would be finished. 
 
+We kindly ask for this to be graded according to our personal and rubric constraints. It was  
+our best forward effort, especially considering the hard deadline and multiple other finals.
+
